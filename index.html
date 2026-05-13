@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integration Dashboard — ธุรกิจไก่ครบวงจร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #ffffff;
+    color: #1f2937;
+    line-height: 1.55;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+  }
+  .page-wrap {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px;
+    padding-top: 28px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #1f3864;
+    padding-bottom: 16px;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-title h1 { font-size: 22px; font-weight: 600; color: #1f3864; letter-spacing: -0.01em; }
+  .header-title .subtitle { font-size: 13px; color: #6b7280; margin-top: 4px; }
+  .header-controls { display: flex; gap: 12px; align-items: center; }
+  .period-selector { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; }
+  .period-selector select {
+    font-family: inherit; font-size: 13px; padding: 6px 10px;
+    border: 1px solid #d1d5db; border-radius: 6px; background: white;
+    color: #1f2937; cursor: pointer;
+  }
+  .period-selector select:focus { outline: none; border-color: #1f3864; }
+
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 28px;
+  }
+  .tab-button {
+    font-family: inherit; font-size: 13.5px; font-weight: 500;
+    color: #6b7280; background: transparent;
+    border: none; padding: 12px 18px;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.15s;
+  }
+  .tab-button:hover { color: #1f3864; }
+  .tab-button.active { color: #1f3864; border-bottom-color: #1f3864; font-weight: 600; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .section { margin-bottom: 32px; }
+  .section-title {
+    font-size: 15px; font-weight: 600; color: #1f3864;
+    margin-bottom: 14px; padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .accent { width: 4px; height: 16px; background: #1f3864; border-radius: 2px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .kpi-card {
+    background: white; border: 1px solid #e5e7eb;
+    border-radius: 8px; padding: 16px 18px; transition: all 0.15s;
+  }
+  .kpi-card:hover { border-color: #c7d2fe; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .kpi-card .label { font-size: 12px; color: #6b7280; margin-bottom: 6px; line-height: 1.35; }
+  .kpi-card .value { font-size: 24px; font-weight: 600; color: #1f2937; line-height: 1.2; }
+  .kpi-card .unit { font-size: 13px; color: #6b7280; margin-left: 4px; font-weight: 400; }
+  .kpi-card .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 12px; }
+  .kpi-card .target { color: #6b7280; }
+  .delta { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 999px; font-weight: 500; font-size: 11px; }
+  .delta.good { background: #ecfdf5; color: #047857; }
+  .delta.warn { background: #fffbeb; color: #b45309; }
+  .delta.bad  { background: #fef2f2; color: #b91c1c; }
+
+  .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+  .chart-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; }
+  .chart-card-title { font-size: 13px; font-weight: 600; color: #1f3864; margin-bottom: 4px; }
+  .chart-card-sub { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 260px; }
+
+  .trends-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+
+  .bottleneck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+  .bottleneck-card {
+    background: white; border: 1px solid #e5e7eb;
+    border-left: 3px solid #ef4444; border-radius: 6px; padding: 14px 16px;
+  }
+  .bottleneck-card.warn { border-left-color: #f59e0b; }
+  .bottleneck-card.info { border-left-color: #3b82f6; }
+  .bottleneck-card .bn-title { font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .bottleneck-card .bn-tag { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; font-weight: 500; background: #fef2f2; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.03em; }
+  .bottleneck-card.warn .bn-tag { background: #fffbeb; color: #b45309; }
+  .bottleneck-card.info .bn-tag { background: #eff6ff; color: #1d4ed8; }
+  .bottleneck-card .bn-desc { font-size: 12.5px; color: #4b5563; line-height: 1.5; margin-bottom: 8px; }
+  .bottleneck-card .bn-impact { font-size: 11.5px; color: #6b7280; border-top: 1px dashed #e5e7eb; padding-top: 8px; margin-top: 8px; }
+  .bottleneck-card .bn-impact strong { color: #1f2937; }
+
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-chip { font-family: inherit; font-size: 12px; padding: 5px 12px; border: 1px solid #d1d5db; background: white; border-radius: 999px; cursor: pointer; color: #4b5563; transition: all 0.15s; }
+  .filter-chip:hover { border-color: #1f3864; color: #1f3864; }
+  .filter-chip.active { background: #1f3864; color: white; border-color: #1f3864; }
+
+  /* ===== Strategy Pillar Badges ===== */
+  .pillar-badge {
+    display: inline-flex; align-items: center;
+    font-size: 10px; font-weight: 600;
+    padding: 1px 7px; border-radius: 999px;
+    white-space: nowrap; letter-spacing: 0.02em;
+    vertical-align: middle; margin-bottom: 2px;
+  }
+  .pillar-diff    { background: #EDE9FE; color: #5B21B6; }
+  .pillar-value   { background: #DCFCE7; color: #065F46; }
+  .pillar-quality { background: #DBEAFE; color: #1E40AF; }
+  .pillar-cost    { background: #FEF3C7; color: #92400E; }
+
+  /* ===== Strategy Overview Cards ===== */
+  .strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  @media (max-width: 900px) { .strategy-grid { grid-template-columns: repeat(2,1fr); } }
+  .strategy-card {
+    border: 1px solid #e5e7eb;
+    border-top: 3px solid;
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: white;
+    transition: box-shadow 0.15s;
+  }
+  .strategy-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .strategy-card.s-diff    { border-top-color: #7C3AED; }
+  .strategy-card.s-value   { border-top-color: #059669; }
+  .strategy-card.s-quality { border-top-color: #2563EB; }
+  .strategy-card.s-cost    { border-top-color: #D97706; }
+  .strategy-card-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .strategy-card-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .s-diff    .strategy-card-icon { background: #EDE9FE; }
+  .s-value   .strategy-card-icon { background: #DCFCE7; }
+  .s-quality .strategy-card-icon { background: #DBEAFE; }
+  .s-cost    .strategy-card-icon { background: #FEF3C7; }
+  .strategy-card-title { font-size: 13px; font-weight: 600; color: #1f2937; }
+  .strategy-card-items { font-size: 11.5px; color: #4b5563; line-height: 1.65; }
+
+  .kpi-table-wrap { background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  .kpi-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .kpi-table thead { background: #f9fafb; }
+  .kpi-table th { text-align: left; padding: 10px 14px; font-weight: 600; color: #4b5563; font-size: 12px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+  .kpi-table th.center { text-align: center; }
+  .kpi-table th.right { text-align: right; }
+  .kpi-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; color: #1f2937; vertical-align: middle; }
+  .kpi-table td.center { text-align: center; }
+  .kpi-table td.right { text-align: right; font-variant-numeric: tabular-nums; }
+  .kpi-table tbody tr:hover { background: #fafafa; }
+  .kpi-table tbody tr.unit-row { background: #f3f4f6; font-weight: 600; color: #1f3864; cursor: pointer; user-select: none; }
+  .kpi-table tbody tr.unit-row:hover { background: #e5e7eb; }
+  .kpi-table tbody tr.unit-row td { padding: 9px 14px; border-bottom: 1px solid #e5e7eb; }
+  .chevron {
+    display: inline-block;
+    width: 12px; text-align: center;
+    margin-right: 6px;
+    color: #6b7280;
+    transition: transform 0.15s;
+    font-size: 10px;
+  }
+  .kpi-table tr.unit-row.expanded .chevron { transform: rotate(90deg); }
+  .kpi-row-detail { transition: opacity 0.15s; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .status-pill.on { background: #ecfdf5; color: #047857; }
+  .status-pill.warn { background: #fffbeb; color: #b45309; }
+  .status-pill.off { background: #fef2f2; color: #b91c1c; }
+  .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  /* Achievement bar replaces 12-mo trend */
+  .achieve-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 130px;
+  }
+  .achieve-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 999px;
+    overflow: hidden;
+    min-width: 70px;
+    position: relative;
+  }
+  .achieve-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.35s ease;
+  }
+  .achieve-pct {
+    font-size: 11.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .daily-toolbar {
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 14px 16px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px;
+  }
+  .daily-toolbar label { color: #4b5563; font-weight: 500; }
+  .daily-toolbar input[type="date"], .daily-toolbar select.qjump {
+    font-family: inherit; font-size: 13px; padding: 6px 10px;
+    border: 1px solid #d1d5db; border-radius: 6px; color: #1f2937; background: white;
+  }
+  .toolbar-btn {
+    font-family: inherit; font-size: 12.5px; padding: 6px 14px;
+    border: 1px solid #1f3864; background: #1f3864; color: white;
+    border-radius: 6px; cursor: pointer; transition: all 0.15s;
+  }
+  .toolbar-btn:hover { background: #1a2f55; }
+  .toolbar-btn.outline { background: white; color: #1f3864; }
+  .toolbar-btn.outline:hover { background: #f3f4f6; }
+
+  .daily-block {
+    background: white; border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 18px; scroll-margin-top: 16px;
+  }
+  .daily-block-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; padding-bottom: 10px;
+    border-bottom: 1px solid #f3f4f6; flex-wrap: wrap; gap: 10px;
+  }
+  .daily-block-header h3 { font-size: 15px; font-weight: 600; color: #1f3864; }
+  .daily-summary-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; background: #f3f4f6; color: #4b5563;
+    padding: 3px 10px; border-radius: 999px;
+  }
+
+  .daily-input-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    table-layout: fixed;
+  }
+  .daily-input-table th {
+    text-align: left; font-size: 11.5px; font-weight: 500;
+    color: #6b7280; padding: 6px 10px; border-bottom: 1px solid #f3f4f6;
+  }
+  .daily-input-table th.right { text-align: right; }
+  .daily-input-table td { padding: 10px 10px; border-bottom: 1px solid #f9fafb; vertical-align: middle; }
+  .daily-input-table td.right { text-align: right; }
+  .daily-input-table tr:last-child td { border-bottom: none; }
+  /* Column widths */
+  .daily-input-table .col-kpi    { width: auto; }
+  .daily-input-table .col-target { width: 160px; }
+  .daily-input-table .col-actual { width: 180px; }
+  /* Unit label inline with input */
+  .unit-cell {
+    display: inline-flex; align-items: center; gap: 6px;
+    justify-content: flex-end; width: 100%;
+  }
+  .unit-label {
+    font-size: 12px; color: #9ca3af; font-weight: 500;
+    min-width: 28px; text-align: left;
+  }
+
+  .actual-input {
+    font-family: inherit; font-size: 13px; padding: 5px 8px;
+    border: 1px solid #d1d5db; border-radius: 5px;
+    width: 110px; text-align: right; color: #1f2937;
+    background: white; transition: all 0.15s;
+  }
+  .actual-input:focus { outline: none; border-color: #1f3864; box-shadow: 0 0 0 2px rgba(31,56,100,0.08); }
+  .actual-input.on   { border-color: #10b981; background: #ecfdf5; }
+  .actual-input.warn { border-color: #f59e0b; background: #fffbeb; }
+  .actual-input.off  { border-color: #ef4444; background: #fef2f2; }
+
+  .note-input {
+    font-family: inherit; font-size: 12px; padding: 5px 8px;
+    border: 1px solid #d1d5db; border-radius: 5px;
+    width: 100%; color: #1f2937; background: white; transition: all 0.15s;
+  }
+  .note-input:focus { outline: none; border-color: #1f3864; }
+
+  .save-status { font-size: 11.5px; color: #6b7280; margin-left: 8px; }
+  .save-status.saved { color: #047857; }
+
+  .update-btn {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border: 1px solid #1f3864;
+    background: white;
+    color: #1f3864;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .update-btn:hover { background: #1f3864; color: white; }
+  .update-btn:disabled {
+    border-color: #d1d5db; color: #9ca3af; cursor: not-allowed;
+    background: #f9fafb;
+  }
+  .update-btn:disabled:hover { background: #f9fafb; color: #9ca3af; }
+  .update-btn.success { background: #ecfdf5; border-color: #10b981; color: #047857; }
+
+  .toast {
+    position: fixed;
+    top: 20px; right: 20px;
+    background: #1f3864;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.2s;
+    z-index: 1000;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: #047857; }
+  .toast.error { background: #b91c1c; }
+
+  /* Year picker */
+  .year-picker {
+    display: inline-flex;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .year-btn {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border: none;
+    background: white;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.12s;
+    border-right: 1px solid #d1d5db;
+  }
+  .year-btn:last-child { border-right: none; }
+  .year-btn:hover { background: #f3f4f6; }
+  .year-btn.active { background: #1f3864; color: white; }
+  .future-note {
+    font-size: 11.5px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .jumplist-items a:hover { border-color: #1f3864; color: #1f3864; }
+
+  .footer {
+    margin-top: 40px; padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 12px; color: #9ca3af; text-align: center;
+  }
+
+
+  /* ===== Daily editable KPI name + target ===== */
+  .kpi-name-edit {
+    font-family: inherit; font-size: 13px; padding: 5px 8px;
+    border: 1px solid transparent; border-radius: 5px;
+    width: 100%; color: #1f2937; background: transparent;
+    transition: all 0.15s; min-width: 180px;
+  }
+  .kpi-name-edit:hover { border-color: #d1d5db; background: white; }
+  .kpi-name-edit:focus { outline: none; border-color: #1f3864; background: white;
+    box-shadow: 0 0 0 2px rgba(31,56,100,0.08); }
+  .target-edit {
+    font-family: inherit; font-size: 13px; padding: 5px 8px;
+    border: 1px solid transparent; border-radius: 5px;
+    width: 90px; text-align: right; color: #6b7280; background: transparent;
+    transition: all 0.15s;
+  }
+  .target-edit:hover { border-color: #d1d5db; background: white; }
+  .target-edit:focus { outline: none; border-color: #1f3864; background: white;
+    box-shadow: 0 0 0 2px rgba(31,56,100,0.08); color: #1f2937; }
+  .edit-hint {
+    font-size: 11px; color: #9ca3af; margin-top: 6px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  @media print {
+    
+
+  /* ===== Fixed top-right user badge ===== */
+  .user-badge-fixed {
+    position: fixed !important;
+    top: 16px;
+    right: 20px;
+    left: auto;
+    z-index: 9000;
+    transform: none !important;
+    will-change: unset;
+  }
+
+  /* ===== KPI Tooltip ===== */
+  .kpi-name-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 5px;
+    cursor: default;
+  }
+  .kpi-info-btn {
+    flex-shrink: 0;
+    width: 15px; height: 15px;
+    background: #e5e7eb;
+    color: #6b7280;
+    border-radius: 50%;
+    font-size: 9.5px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-top: 1px;
+    transition: background 0.12s;
+    user-select: none;
+  }
+  .kpi-info-btn:hover { background: #1f3864; color: white; }
+  .kpi-tooltip {
+    display: none;
+    position: absolute;
+    left: 0; top: calc(100% + 6px);
+    width: 280px;
+    background: #1f2937;
+    color: #f9fafb;
+    font-size: 12px;
+    line-height: 1.55;
+    padding: 10px 13px;
+    border-radius: 7px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    z-index: 100;
+    font-weight: 400;
+    pointer-events: none;
+  }
+  .kpi-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -5px; left: 14px;
+    width: 10px; height: 10px;
+    background: #1f2937;
+    transform: rotate(45deg);
+    border-radius: 2px;
+  }
+  .kpi-tooltip .tt-label {
+    font-weight: 600;
+    color: #93c5fd;
+    margin-bottom: 4px;
+    font-size: 11.5px;
+  }
+  .kpi-tooltip .tt-formula {
+    color: #fcd34d;
+    font-size: 11px;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .kpi-info-btn:hover + .kpi-tooltip,
+  .kpi-tooltip:hover { display: block; }
+
+  /* ===== Login overlay ===== */
+  #loginOverlay {
+    position: fixed; inset: 0;
+    background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  .login-box {
+    background: white; border: 1px solid #e5e7eb;
+    border-radius: 14px; padding: 40px 44px;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .login-logo {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 28px;
+  }
+  .login-logo-icon {
+    width: 40px; height: 40px; background: #1f3864;
+    border-radius: 9px; display: flex; align-items: center;
+    justify-content: center; font-size: 20px;
+  }
+  .login-logo-text { font-size: 14px; font-weight: 600; color: #1f3864; line-height: 1.35; }
+  .login-logo-sub { font-size: 11px; color: #6b7280; font-weight: 400; }
+  .login-box h2 { font-size: 19px; font-weight: 600; color: #1f2937; margin-bottom: 4px; }
+  .login-box .login-sub { font-size: 13px; color: #6b7280; margin-bottom: 26px; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 12.5px; font-weight: 500; color: #374151; margin-bottom: 5px; }
+  .login-field select, .login-field input {
+    font-family: inherit; font-size: 13.5px; width: 100%;
+    padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+    color: #1f2937; background: white; transition: border-color 0.15s;
+  }
+  .login-field select:focus, .login-field input:focus {
+    outline: none; border-color: #1f3864;
+    box-shadow: 0 0 0 3px rgba(31,56,100,0.08);
+  }
+  .login-btn {
+    width: 100%; padding: 11px; background: #1f3864; color: white;
+    border: none; border-radius: 8px; font-family: inherit;
+    font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 6px;
+    transition: background 0.15s;
+  }
+  .login-btn:hover { background: #162d54; }
+  .login-error {
+    background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
+    font-size: 12.5px; padding: 9px 12px; border-radius: 6px;
+    margin-top: 12px; display: none;
+  }
+  .login-hint { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 20px; line-height: 1.7; }
+
+  /* ===== User badge in header ===== */
+  .user-badge {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; background: #1f3864; color: white;
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0;
+    letter-spacing: 0;
+  }
+  .user-info { display: flex; flex-direction: column; line-height: 1.35; }
+  .user-name { font-size: 13px; font-weight: 600; color: #1f2937; white-space: nowrap; }
+  .user-dept { font-size: 11.5px; color: #6b7280; white-space: nowrap; }
+  .logout-btn {
+    font-family: inherit; font-size: 12.5px; font-weight: 500;
+    padding: 7px 16px;
+    border: 1px solid #d1d5db; background: white;
+    border-radius: 8px; color: #4b5563;
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .logout-btn:hover { border-color: #ef4444; color: #ef4444; background: #fff5f5; }
+
+  /* Permission lock on daily blocks */
+  .block-locked { opacity: 0.38; pointer-events: none; }
+  .block-lock-msg {
+    font-size: 11.5px; color: #9ca3af;
+    padding: 2px 10px; background: #f9fafb;
+    border: 1px solid #e5e7eb; border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Login Overlay ===== -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🐔</div>
+      <div>
+        <div class="login-logo-text">Integration Dashboard</div>
+        <div class="login-logo-sub">ธุรกิจไก่ครบวงจร (NAE)</div>
+      </div>
+    </div>
+    <h2>เข้าสู่ระบบ</h2>
+    <p class="login-sub">กรุณาเลือกสายงานและกรอกรหัสผ่าน</p>
+
+  
+    <div class="login-field">
+      <label for="loginPass">รหัสผ่าน</label>
+      <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn">เข้าสู่ระบบ</button>
+    <div class="login-error" id="loginError">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่</div>
+    <div class="login-hint">
+      <strong>ผู้บริหาร (3 แท็บ):</strong><br>
+      admin = <strong>admin1234</strong> · board = <strong>board2026</strong><br>
+      <strong>หน่วยงาน (บันทึกรายวัน):</strong><br>
+      รหัส unit + @2026 เช่น feed@2026, gpps@2026 …
+    </div>
+  </div>
+</div>
+
+<!-- Fixed top-right user badge -->
+<div id="userBadgeWrap" style="display:none;" class="user-badge-fixed">
+  <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+</div>
+
+<div class="page-wrap">
+<div class="header">
+  <div class="header-title">
+    <h1>Integration Dashboard — ธุรกิจไก่ครบวงจร (NAE)</h1>
+    <div class="subtitle">ติดตาม Target vs Actual แต่ละสายงาน · เน้นจุด bottleneck · อัปเดต <span id="lastUpdated"></span></div>
+  </div>
+  <!-- header-controls removed; user badge is fixed top-right -->
+</div>
+
+<div class="tab-nav" role="tablist">
+  <button class="tab-button active" data-tab="overview">ภาพรวม</button>
+  <button class="tab-button" data-tab="status">สถานะ &amp; คอขวด</button>
+  <button class="tab-button" data-tab="trends">แนวโน้มรายปี</button>
+  <button class="tab-button" data-tab="daily" id="tabBtnDaily">บันทึกรายวัน</button>
+</div>
+
+<!-- TAB 1: OVERVIEW -->
+<div class="tab-content active" id="tab-overview">
+  <div class="section">
+    <div class="section-title"><span class="accent"></span>เป้าหมายเชิงกลยุทธ์ 2026 — วงกลมความมั่นคง</div>
+    <div class="strategy-grid">
+      <div class="strategy-card s-diff">
+        <div class="strategy-card-header">
+          <div class="strategy-card-icon">🎯</div>
+          <div class="strategy-card-title">1. ทำต่าง</div>
+        </div>
+        <div class="strategy-card-items">
+          • NAE Standard + BCG / Biogas<br>
+          • CO-BRAND, Branding &amp; Customer Project<br>
+          • ขายล่วงหน้า Special Product (100/75/50/25%)
+        </div>
+      </div>
+      <div class="strategy-card s-value">
+        <div class="strategy-card-header">
+          <div class="strategy-card-icon">💎</div>
+          <div class="strategy-card-title">2. มูลค่า, คุณค่า</div>
+        </div>
+        <div class="strategy-card-items">
+          • Value Added: YTR, MARINADE, IVQF, BREADED IVQF<br>
+          • Small Pack, Co-Brand, NAE Branding<br>
+          • ขยาย Value Added mix ในพอร์ตส่งออก
+        </div>
+      </div>
+      <div class="strategy-card s-quality">
+        <div class="strategy-card-header">
+          <div class="strategy-card-icon">⭐</div>
+          <div class="strategy-card-title">3. คุณภาพ</div>
+        </div>
+        <div class="strategy-card-items">
+          • ความรวดเร็ว: ตอบสนองลูกค้าก่อนที่จะขอ<br>
+          • Proactive Sensory Test + เกณฑ์ประเมินราคา<br>
+          • QWP &lt; QWI: กระบวนการดีกว่า work instruction
+        </div>
+      </div>
+      <div class="strategy-card s-cost">
+        <div class="strategy-card-header">
+          <div class="strategy-card-icon">⚙️</div>
+          <div class="strategy-card-title">4. ต้นทุน</div>
+        </div>
+        <div class="strategy-card-items">
+          • Full OEE + Efficiency ทุกสายการผลิต<br>
+          • Cross-functional: ทำงานแทนกันได้<br>
+          • ระบบมากขึ้น ลดการพึ่งพาคน
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent"></span>ตัวชี้วัดระดับบริษัท (Corporate KPIs)</div>
+    <div class="kpi-grid" id="corporateKpiGrid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent"></span>KPI รายสายงาน — Target vs Actual</div>
+    <div class="filter-bar" id="filterBar"></div>
+    <div style="font-size:11.5px;color:#6b7280;margin-bottom:8px;">คลิกที่ชื่อหน่วยงานเพื่อดู / ซ่อนรายละเอียด KPI</div>
+    <div class="kpi-table-wrap">
+      <table class="kpi-table">
+        <thead>
+          <tr>
+            <th style="min-width:240px;">KPI</th>
+            <th class="right">Target</th>
+            <th class="right">Actual</th>
+            <th class="right">Δ vs Target</th>
+            <th class="center">Achievement</th>
+            <th class="center">สถานะ</th>
+            <th>Owner / Partner</th>
+          </tr>
+        </thead>
+        <tbody id="kpiTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: STATUS & BOTTLENECKS -->
+<div class="tab-content" id="tab-status">
+  <div class="section">
+    <div class="section-title">
+      <span class="accent"></span>สถานะภาพรวมรายปี
+      <span style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+        <span class="future-note" id="statusFutureNote">พ.ค.–ธ.ค. = เดือนที่ยังไม่มีข้อมูล</span>
+        <div class="year-picker" id="statusYearPicker">
+          <button class="year-btn" data-year="2025">2025</button>
+          <button class="year-btn active" data-year="2026">2026</button>
+        </div>
+      </span>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-card-title">Cost vs Forecast accuracy</div>
+        <div class="chart-card-sub" id="statusChartSub">ม.ค.–ธ.ค. 2026 · เส้นประ = target · ช่วงสีอ่อน = เดือนในอนาคต</div>
+        <div class="chart-wrap"><canvas id="overviewChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">% KPI on-target แยกตามหน่วยงาน</div>
+        <div class="chart-card-sub">เดือนปัจจุบัน · สีแดง = น้อยกว่า 60%</div>
+        <div class="chart-wrap"><canvas id="unitChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent"></span>จุดที่ต้องโฟกัส (Bottlenecks &amp; Focus Points)</div>
+    <div class="bottleneck-grid" id="bottleneckGrid"></div>
+  </div>
+</div>
+
+<!-- TAB 2: TRENDS -->
+<div class="tab-content" id="tab-trends">
+  <div class="section">
+    <div class="section-title">
+      <span class="accent"></span>แนวโน้ม Corporate KPIs รายปี (ม.ค.–ธ.ค.)
+      <span style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+        <span class="future-note" id="trendsFutureNote">พ.ค.–ธ.ค. = เดือนที่ยังไม่มีข้อมูล</span>
+        <div class="year-picker" id="trendsYearPicker">
+          <button class="year-btn" data-year="2025">2025</button>
+          <button class="year-btn active" data-year="2026">2026</button>
+        </div>
+      </span>
+    </div>
+    <div class="trends-grid" id="corpTrendsGrid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="accent"></span>ดู KPI รายหน่วยงาน</div>
+    <div class="daily-toolbar">
+      <label>เลือกหน่วยงาน:</label>
+      <select id="trendUnitSelect" class="qjump"></select>
+    </div>
+    <div class="trends-grid" id="unitTrendsGrid"></div>
+  </div>
+</div>
+
+<!-- TAB 3: DAILY INPUT -->
+<div class="tab-content" id="tab-daily">
+  <div class="daily-toolbar">
+    <label for="dailyDate">วันที่บันทึก</label>
+    <input type="date" id="dailyDate">
+    <button class="toolbar-btn outline" id="loadPrevDay">← วันก่อนหน้า</button>
+    <span class="save-status" id="saveStatus">บันทึกอัตโนมัติเมื่อกรอกค่า · เก็บใน browser</span>
+  </div>
+
+  <div id="dailyBlocks"></div>
+</div>
+
+<div class="footer">
+  Confidential — Board use only · ข้อมูล Actual ในแดชบอร์ดเป็น <strong>ตัวอย่าง demo</strong> · ข้อมูลที่กรอกในแท็บ "บันทึกรายวัน" จัดเก็บในเบราว์เซอร์ของท่าน (localStorage)
+</div>
+</div><!-- /.page-wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const CURRENT_YEAR   = 2026;
+const ACTUAL_THRU    = 4;   // Apr 2026 = month index 3 (0-based), data available for months 0-3
+
+// Rolling order in history arrays: [พ.ค.25,มิ.ย.25,ก.ค.25,ส.ค.25,ก.ย.25,ต.ค.25,พ.ย.25,ธ.ค.25,ม.ค.26,ก.พ.26,มี.ค.26,เม.ย.26]
+// getCYData maps this → calendar year Jan-Dec for chosen year
+// 2026: Jan=h[8], Feb=h[9], Mar=h[10], Apr=h[11], May-Dec=null
+// 2025: Jan-Apr=null (not in window), May=h[0], Jun=h[1], …, Dec=h[7]
+function getCYData(h, year) {
+  if (year === 2026) {
+    return [h[8], h[9], h[10], h[11], null, null, null, null, null, null, null, null];
+  } else {
+    return [null, null, null, null, h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7]];
+  }
+}
+
+let chartYear = 2026;   // globally selected year for all trend charts
+
+(function() {
+  const now = new Date();
+  const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const dateStr = now.getDate() + ' ' + thMonths[now.getMonth()] + ' ' + (now.getFullYear() + 543);
+  document.getElementById('lastUpdated').textContent = dateStr;
+})();
+document.getElementById('dailyDate').value = '2026-04-27';
+
+const CORPORATE_KPIS = [
+  { label: 'End-to-end cost / kg saleable meat', value: 64.8, unit: 'บาท', target: 64.0, higher: false, pillar: 'cost',
+    history: [66.2,66.0,65.7,65.3,65.5,65.1,65.0,64.8,64.6,64.7,64.9,64.8] },
+  { label: 'NAE compliance rate', value: 100, unit: '%', target: 100, higher: true, pillar: 'diff',
+    history: [100,100,99.7,100,100,100,100,99.8,100,100,100,100] },
+  { label: 'Forecast accuracy (3-month)', value: 76.2, unit: '%', target: 80, higher: true, pillar: 'cost',
+    history: [72,74,75,76,77,78,76,75,77,76,77,76.2] },
+  { label: 'Group OTIF', value: 96.4, unit: '%', target: 97, higher: true, pillar: 'quality',
+    history: [94,94.5,95,95.5,96,96.2,96.5,96.8,96.5,96.2,96.0,96.4] },
+  { label: 'Margin per breeder / year', value: 1185, unit: 'บาท', target: 1200, higher: true, pillar: 'value',
+    history: [1100,1120,1140,1150,1160,1170,1175,1180,1190,1185,1180,1185] },
+];
+
+const UNITS = [
+  // ── ต้นน้ำ ──────────────────────────────────────────────────────────────────
+  // โรงงานอาหารสัตว์: เลือก FCR (impact สูงสุดทั้งสาย), Formula accuracy (คุณภาพ),
+  //   Cost per ton (ต้นทุน) — ครบ 3 มิติ คุณภาพ-ประสิทธิภาพ-ต้นทุน
+  { id: 'feed', name: 'โรงงานอาหารสัตว์', kpis: [
+    { name: 'FCR เฉลี่ยฟาร์ม (corrected)',
+      why: 'ตัวชี้วัดคุณภาพอาหารที่ส่งผลโดยตรงต่อต้นทุนการผลิตทั้งสาย',
+      target: 1.75, actual: 1.79, unit: '', higher: false,
+      history: [1.88,1.86,1.85,1.84,1.83,1.82,1.81,1.80,1.79,1.80,1.79,1.79],
+      owner: 'ร่วม โรงอาหาร+ฟาร์ม', partner: 'ฟาร์ม' },
+    { name: 'Formula accuracy',
+      why: 'ความแม่นยำสูตรส่งผลต่อ nutrient delivery และ FCR — ISO milling standard',
+      target: 99.5, actual: 99.2, unit: '%', higher: true,
+      history: [98.5,98.6,98.7,98.8,99.0,99.1,99.2,99.3,99.3,99.2,99.1,99.2],
+      owner: 'QA', partner: 'R&D' },
+    { name: 'Cost per ton vs budget',
+      why: 'ต้นทุนวัตถุดิบ+กระบวนการ tolerance ±2% — NAE ingredient premium สูงกว่า conventional ~6%',
+      target: 0, actual: 1.8, unit: '%', tolerance: 2, higher: false,
+      history: [3.5,3.2,2.9,2.6,2.3,2.0,1.8,2.1,2.2,1.8,1.7,1.8],
+      owner: 'ผจก.โรงงาน', partner: 'จัดซื้อ' },
+  ]},
+  // ฟาร์ม GP/PS: เลือก Hatchability handed-off (output สุดท้ายที่ส่งมอบ),
+  //   Reject chick (คุณภาพลูกไก่), 1st week mortality (downstream accountability)
+  { id: 'gpps', name: 'ฟาร์ม GP/PS', kpis: [
+    { name: 'Hatchability handed-off (from set)',
+      why: 'KPI สุดท้ายที่รวมทุกปัจจัย: fertility × hatchability × reject — เป็น output ที่ส่งมอบให้โรงฟัก',
+      target: 83, actual: 81.8, unit: '%', higher: true,
+      history: [78.0,78.5,79.0,79.5,80.0,80.5,81.0,81.5,81.8,81.5,81.8,81.8],
+      owner: 'ร่วม GP/PS+โรงฟัก', partner: 'โรงฟัก' },
+    { name: 'Reject chick rate',
+      why: 'สะท้อนสุขภาพฝูง + คุณภาพการฟัก — ทุก 1% reject = สูญรายได้ลูกไก่ทั้งล็อต',
+      target: 2.5, actual: 3.2, unit: '%', higher: false,
+      history: [4.8,4.5,4.2,3.9,3.6,3.3,3.0,2.8,2.9,3.2,3.2,3.2],
+      owner: 'ผจก.ฟาร์ม + โรงฟัก', partner: 'โรงฟัก' },
+    { name: '1st week mortality (broiler)',
+      why: 'KPI ร่วม GP/PS–โรงฟัก–ฟาร์ม วัดคุณภาพลูกไก่ที่ส่งออกจริง target ≤1.0% (NAE)',
+      target: 1.0, actual: 1.3, unit: '%', higher: false,
+      history: [1.8,1.7,1.6,1.5,1.4,1.3,1.2,1.1,1.0,1.1,1.3,1.3],
+      owner: 'ผจก.ฟาร์ม', partner: 'ฟาร์มไก่เนื้อ, สัตวแพทย์' },
+  ]},
+  // โรงฟักไข่: เลือก Hatchability from set (KPI หลัก), Chick quality Pasgar (มาตรฐานสากล),
+  //   Contamination rate (ความเสี่ยงการปนเปื้อนในเครื่องฟัก)
+  { id: 'hatch', name: 'โรงฟักไข่', kpis: [
+    { name: 'Hatchability (from set)',
+      why: 'KPI หลักของโรงฟัก วัด % ลูกไก่ที่ออกจากไข่ทั้งหมดที่ใส่ — Ross NAE top quartile >83%',
+      target: 83, actual: 81.5, unit: '%', higher: true,
+      history: [78.5,79.0,79.5,80.0,80.5,81.0,81.5,82.0,81.8,81.5,81.3,81.5],
+      owner: 'ผจก.โรงฟัก', partner: 'GP/PS' },
+    { name: 'Chick quality (Pasgar score ≥7)',
+      why: 'มาตรฐานสากล Pasgar/Tona scoring วัดความสมบูรณ์ลูกไก่ — ส่งผลโดยตรงต่อ 1st week mortality',
+      target: 90, actual: 87.2, unit: '%', higher: true,
+      history: [83.0,84.0,85.0,86.0,87.0,87.5,88.0,88.5,88.0,87.5,87.0,87.2],
+      owner: 'QA', partner: 'ฟาร์ม' },
+    { name: 'Livability (chick to delivery)',
+      why: 'อัตราการมีชีวิตรอดของลูกไก่ตั้งแต่ฟักออกจนถึงส่งมอบให้ฟาร์มเนื้อ — สะท้อนคุณภาพการจัดการหลังฟัก, การขนส่ง และ biosecurity ของโรงฟัก target ≥98.5%',
+      target: 98.5, actual: 97.8, unit: '%', higher: true,
+      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.2,98.0,97.8,97.6,97.8],
+      owner: 'ผจก.โรงฟัก', partner: 'สัตวแพทย์' },
+  ]},
+  // ฟาร์มไก่เนื้อ: เลือก EPEF (integrates all: BW × livability / FCR × age),
+  //   FCR corrected (ต้นทุน feed สูงสุด 65-70% of total cost), NAE compliance (license to operate)
+  { id: 'broiler', name: 'ฟาร์มไก่เนื้อ (Own Farm)', kpis: [
+    { name: 'EPEF (NAE index)',
+      why: 'European Production Efficiency Factor รวม BW, FCR, livability, อายุในสูตรเดียว — KPI เดียวที่วัดประสิทธิภาพรวม NAE top quartile ≥330',
+      target: 330, actual: 315, unit: '', higher: true,
+      history: [292,296,300,304,308,312,316,320,318,315,315,315],
+      owner: 'ผจก.ฟาร์ม', partner: 'อาหารสัตว์' },
+    { name: 'FCR corrected (NAE)',
+      why: 'Feed cost คือ 65-70% ของต้นทุนการผลิต — FCR 1 จุด = ผลต่อกำไรหลายล้านบาท/เดือน',
+      target: 1.75, actual: 1.79, unit: '', higher: false,
+      history: [1.88,1.86,1.85,1.84,1.83,1.82,1.81,1.80,1.79,1.80,1.79,1.79],
+      owner: 'ผจก.ฟาร์ม', partner: 'อาหารสัตว์' },
+    { name: 'NAE compliance',
+      why: '1 event = สูญสถานะ NAE certification ทั้งล็อต กระทบ premium pricing และ export market ทันที',
+      target: 100, actual: 100, unit: '%', higher: true,
+      history: [100,100,100,100,100,100,99.5,100,100,100,100,100],
+      owner: 'สัตวแพทย์', partner: 'QA' },
+  ]},
+  // CF Operations: เลือก NAE compliance (ความเสี่ยงสูงสุด), EPEF avg (ประสิทธิภาพกลุ่ม),
+  //   Audit pass rate (management quality indicator ของ CF ทั้งกลุ่ม)
+  { id: 'cf', name: 'Contract Farm Operations', kpis: [
+    { name: 'NAE compliance (CF group)',
+      why: 'ความเสี่ยงสูงกว่าฟาร์มเองเพราะ visibility ต่ำกว่า — 1 breach = ทั้งกลุ่มเสี่ยงสูญสถานะ',
+      target: 100, actual: 99.2, unit: '%', higher: true,
+      history: [97.5,98.0,98.5,99.0,99.5,100,99.8,100,99.5,99.0,99.2,99.2],
+      owner: 'สัตวแพทย์', partner: 'QA' },
+    { name: 'EPEF avg (CF, NAE)',
+      why: 'วัดประสิทธิภาพการเลี้ยงรวมของกลุ่ม CF — top CF NAE performer ≥315 EPEF',
+      target: 315, actual: 305, unit: '', higher: true,
+      history: [284,288,292,296,299,302,305,308,306,304,305,305],
+      owner: 'ผจก.CF', partner: 'สัตวแพทย์' },
+    { name: '% farms passing full audit',
+      why: 'Biosecurity + welfare + NAE protocol audit ผ่านทั้งหมด — proxy ของ management quality ทั้งกลุ่ม',
+      target: 88, actual: 84, unit: '%', higher: true,
+      history: [74,76,78,80,81,82,83,84,85,84,83,84],
+      owner: 'ผจก.CF + QA', partner: '-' },
+  ]},
+  // ── แปรรูป ──────────────────────────────────────────────────────────────────
+  // โรงชำแหละ: เลือก Grade A export (revenue quality), Carcass yield (volume efficiency),
+  //   ต้นทุนการผลิต (cost per ton) — 3 มิติที่ board ต้องติดตาม
+  { id: 'slaught', name: 'โรงชำแหละไก่', kpis: [
+    { name: 'A Grade yield improvement (%)',
+      why: 'วัดสัดส่วนซากไก่ที่ผ่านมาตรฐาน A Grade (ไม่มีรอยฟกช้ำ, น้ำหนักในช่วง spec, ผิวสมบูรณ์) — เป้าหมายคือลด defect ต่อเนื่อง ทุก 1% ที่เพิ่ม = premium revenue ต่างจาก B/C ถึง 15-25 บาท/kg',
+      target: 75, actual: 72.8, unit: '%', higher: true,
+      history: [67.0,68.0,69.0,70.0,71.0,71.5,72.0,72.5,72.8,72.8,72.8,72.8],
+      owner: 'QA', partner: 'ฟาร์ม, ขายส่งออก' },
+    { name: 'Carcass yield (%)',
+      why: 'วัดประสิทธิภาพการใช้น้ำหนักมีชีวิต — ทุก 0.5% = ผลต่อปริมาณ product หลายตัน/วัน',
+      target: 73.5, actual: 72.8, unit: '%', higher: true,
+      history: [71.0,71.2,71.5,71.8,72.2,72.5,72.8,73.0,73.2,72.8,72.6,72.8],
+      owner: 'ผจก.ผลิต', partner: 'ฟาร์ม' },
+    { name: 'ต้นทุนการผลิต',
+      why: 'Processing cost ต่อตัน (ไม่รวมค่าไก่) — target 5,800 บาท/ตัน = efficient scale operation',
+      target: 5800, actual: 6050, unit: 'บาท/ตัน', higher: false,
+      history: [7200,7000,6800,6600,6400,6200,6100,6050,6000,5950,6050,6050],
+      owner: 'ผจก.ผลิต', partner: 'บัญชี' },
+  ]},
+  // โรงปรุงสุก: OEE (ต้นทุน), OTIF (คุณภาพ), Value Added mix (มูลค่า — กลยุทธ์หลัก 2026)
+  { id: 'cooked', name: 'โรงปรุงสุก', kpis: [
+    { name: 'OEE (%)',
+      why: 'Availability × Performance × Quality รวม 3 มิติ — กลยุทธ์ ต้นทุน: Full OEE คือเป้าหมาย 2026',
+      target: 72, actual: 68.5, unit: '%', higher: true,
+      history: [61,62,63,64,65,66,67,68,68.5,68.0,68.5,68.5],
+      owner: 'ผจก.โรงงาน', partner: 'ซ่อมบำรุง' },
+    { name: 'Process improvement rate (yield %)',
+      why: 'วัด yield ของสินค้า value-added (YTR/MARINADE/IVQF/BREADED) ต่อน้ำหนักวัตถุดิบที่รับเข้า — ปรับปรุงกระบวนการเพื่อลด trim loss และเพิ่ม output ต่อ kg input กลยุทธ์ ต้นทุน 2026',
+      target: 88, actual: 85.5, unit: '%', higher: true,
+      history: [82.0,82.5,83.0,83.5,84.0,84.5,85.0,85.5,85.8,85.5,85.3,85.5],
+      owner: 'ผจก.โรงงาน + R&D', partner: 'QA' },
+    { name: 'Value Added mix % (YTR/MARINADE/IVQF/BREADED)',
+      why: 'สัดส่วน value-added product ในการผลิตทั้งหมด — กลยุทธ์ มูลค่า 2026: เพิ่ม YTR, MARINADE, IVQF, BREADED IVQF',
+      target: 40, actual: 32, unit: '%', higher: true,
+      history: [18,20,22,24,26,28,29,30,31,30,32,32],
+      owner: 'ผจก.โรง + R&D + ขาย', partner: 'ขายส่งออก' },
+  ]},
+  // ขายต่างประเทศ: Sales volume (มูลค่า), Gross margin (มูลค่า), Value Added mix (มูลค่า+ทำต่าง)
+  { id: 'export', name: 'ฝ่ายขายต่างประเทศ', kpis: [
+    { name: 'Sales volume vs target',
+      why: 'Top-line — เกินเป้าสะท้อน demand > supply ซึ่งดีสำหรับ NAE premium pricing',
+      target: 100, actual: 102, unit: '%', higher: true,
+      history: [96,97,98,99,100,101,102,103,101,100,102,102],
+      owner: 'ผจก.ขายส่งออก', partner: 'โรงผลิต' },
+    { name: 'Forward Sales coverage (%)',
+      why: 'สัดส่วน volume ที่ลูกค้ายืนยัน (confirmed PO) ล่วงหน้าก่อนเดือนผลิต — ยิ่งสูงยิ่งลดความเสี่ยงด้าน demand และช่วยให้ S&OP วางแผนได้แม่นยำ target ≥70% ของ monthly volume',
+      target: 70, actual: 64, unit: '%', higher: true,
+      history: [52,54,56,58,60,61,62,63,64,63,64,64],
+      owner: 'ผจก.ขายส่งออก', partner: 'S&OP' },
+    { name: 'Value Added mix % (YTR/MARINADE/IVQF/BREADED)',
+      why: 'กลยุทธ์ มูลค่า 2026: เพิ่ม 1% = margin ขยาย 0.3-0.5% โดยไม่เพิ่ม volume — ขายล่วงหน้า Special Product',
+      target: 60, actual: 58, unit: '%', higher: true,
+      history: [52,53,54,55,56,57,58,59,58,57,58,58],
+      owner: 'ผจก.ขายส่งออก', partner: 'โรงปรุงสุก' },
+  ]},
+  // ขายในประเทศ: เลือก Sales volume, Gross margin, NPD penetration (growth driver)
+  { id: 'domestic', name: 'ฝ่ายขายในประเทศ', kpis: [
+    { name: 'Sales volume vs target',
+      why: 'Top-line ในประเทศ — baseline revenue ที่รับซื้อ product ที่ไม่ถึงเกณฑ์ส่งออก',
+      target: 100, actual: 99, unit: '%', higher: true,
+      history: [96,97,97,98,99,100,99,98,99,100,99,99],
+      owner: 'ผจก.ขายในประเทศ', partner: 'โรงผลิต' },
+    { name: 'Forward Sales coverage (%)',
+      why: 'สัดส่วน volume ในประเทศที่ลูกค้ายืนยันล่วงหน้า (confirmed PO/contract) ก่อนเดือนผลิต — ช่วยลด overstock และ stockout ในตลาดในประเทศ target ≥60%',
+      target: 60, actual: 55, unit: '%', higher: true,
+      history: [44,46,48,50,52,53,54,55,55,54,55,55],
+      owner: 'ผจก.ขายในประเทศ', partner: 'S&OP' },
+    { name: 'NPD penetration (%)',
+      why: 'สัดส่วนยอดขาย new product ≤18 เดือน — driver ของ margin expansion และ brand differentiation',
+      target: 10, actual: 8.5, unit: '%', higher: true,
+      history: [5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,8.5,8.0,8.5,8.5],
+      owner: 'ผจก.ขาย+R&D', partner: 'R&D' },
+  ]},
+  // ขายหน้าโรง: Truck load utilization, No-order stock rate, Fresh-to-frozen diversion
+  { id: 'frontdoor', name: 'ฝ่ายขายหน้าโรง', kpis: [
+    { name: 'Truck load utilization (%)',
+      why: 'วัดสัดส่วนน้ำหนักสินค้าต่อความจุรถบรรทุกต่อเที่ยว — ขายให้เต็มคันรถลดต้นทุนขนส่งต่อ kg และเพิ่ม revenue ต่อเที่ยว target ≥90% ของ capacity',
+      target: 90, actual: 85.5, unit: '%', higher: true,
+      history: [78,79,80,81,82,83,84,85,85.5,85,85.5,85.5],
+      owner: 'ผจก.หน้าโรง', partner: 'โรงชำแหละ' },
+    { name: 'No-order stock rate (%)',
+      why: 'สัดส่วนสินค้าที่ไม่มี customer order รองรับต่อ stock ทั้งหมด — stock ที่ไม่มี order = เสี่ยงค้างและต้องลดราคาหรือทิ้ง กลยุทธ์คือลดสัดส่วนนี้ให้น้อยที่สุด',
+      target: 5, actual: 8.2, unit: '%', higher: false,
+      history: [14,13,12,11,10,9.5,9,8.5,8.2,8.5,8.2,8.2],
+      owner: 'ผจก.หน้าโรง', partner: 'S&OP' },
+    { name: 'Fresh-to-frozen diversion rate (%)',
+      why: 'สัดส่วนสินค้าสดที่ต้องโอนเข้า freezer เพราะขายไม่หมดในวัน — ยิ่งน้อยยิ่งดี เพราะ frozen = margin ลดลงและ shelf life สั้นลง target ≤8%',
+      target: 8, actual: 10.5, unit: '%', higher: false,
+      history: [16,15,14,13,12,11.5,11,10.5,10,10.5,10.5,10.5],
+      owner: 'ผจก.หน้าโรง', partner: 'คลังห้องเย็น' },
+  ]},
+  // FSC: KPI ที่มีอยู่ครบอยู่แล้ว — 3 ตัว on-point
+  { id: 'fsc', name: 'Food Supply Chain (FSC)', kpis: [
+    { name: 'OTIF delivery (%)',
+      why: 'Key account commitment — FSC customer penalty clause เริ่มที่ OTIF <97% ทำให้ target 98% สำคัญมาก',
+      target: 98, actual: 97.8, unit: '%', higher: true,
+      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.2,98.0,97.9,97.8,97.8],
+      owner: 'ผจก.FSC', partner: 'คลัง' },
+    { name: 'Forward Sales coverage (%)',
+      why: 'สัดส่วน FSC volume ที่ลูกค้า (โรงแรม, ร้านอาหาร, สายการบิน) confirm ล่วงหน้าก่อนเดือนผลิต — ช่วยให้วางแผนการผลิตและ cold chain ได้แม่นยำ ลดการ short supply target ≥80%',
+      target: 80, actual: 76, unit: '%', higher: true,
+      history: [62,64,66,68,70,72,73,74,75,75,76,76],
+      owner: 'ผจก.FSC', partner: 'S&OP' },
+    { name: 'On-spec audit pass (%)',
+      why: 'B2B food spec audit (spec weight, micro limit, labeling) — ผ่าน 100% = ต่อสัญญาได้; ล้มเหลว = termination',
+      target: 100, actual: 100, unit: '%', higher: true,
+      history: [100,100,100,100,100,100,100,100,100,100,100,100],
+      owner: 'QA + ผจก.FSC', partner: 'โรงปรุงสุก' },
+  ]},
+  // ขายอาหารสัตว์ตลาดอิสระ: เลือก Volume, Gross margin, Capacity discipline (การแย่ง capacity)
+  { id: 'feedsales', name: 'ฝ่ายขายอาหารสัตว์ตลาดอิสระ', kpis: [
+    { name: 'Sales volume vs target (%)',
+      why: 'ตลาดอิสระเป็น outlet สำคัญช่วง excess capacity — volume รักษา plant utilization',
+      target: 100, actual: 105, unit: '%', higher: true,
+      history: [97,99,101,102,103,104,105,106,104,105,105,105],
+      owner: 'ผจก.ขายอาหาร', partner: 'โรงงานอาหาร' },
+    { name: 'Gross margin (%)',
+      why: 'ตลาดอิสระ margin ต่ำกว่า captive — target 8% เป็นเกณฑ์ขั้นต่ำที่ยังควร serve ตลาดนี้',
+      target: 8, actual: 7.5, unit: '%', higher: true,
+      history: [6.8,7.0,7.2,7.4,7.6,7.8,8.0,7.8,7.5,7.6,7.5,7.5],
+      owner: 'ผจก.ขายอาหาร', partner: 'บัญชี' },
+    { name: 'Trial sample conversion rate (%)',
+      why: 'สัดส่วนลูกค้าที่ได้รับสินค้าตัวอย่างแล้วสั่งซื้อต่อเนื่องภายใน 60 วัน — วัดประสิทธิภาพการขยายฐานลูกค้าใหม่ในตลาดอิสระ target ≥40%',
+      target: 40, actual: 32, unit: '%', higher: true,
+      history: [20,22,24,26,28,30,31,32,33,32,32,32],
+      owner: 'ผจก.ขายอาหาร', partner: 'R&D' },
+  ]},
+  // ── หน่วยสนับสนุน ────────────────────────────────────────────────────────────
+  // จัดซื้อ: เลือก PPV (savings), Incoming reject (quality gate), Supplier fill rate (supply security)
+  { id: 'procure', name: 'ฝ่ายจัดซื้อ', kpis: [
+    { name: 'Purchase Price Variance vs benchmark (%)',
+      why: 'PPV วัด savings ของทีมจัดซื้อ — tolerance ±2% จาก benchmark market; negative = ซื้อถูกกว่าตลาด',
+      target: 0, actual: -1.2, unit: '%', tolerance: 2, higher: false,
+      history: [1.8,1.5,1.2,0.8,0.5,0.2,0,-0.3,-0.8,-1.0,-1.2,-1.2],
+      owner: 'ผจก.จัดซื้อ', partner: 'โรงอาหาร' },
+    { name: 'Incoming material reject rate (%)',
+      why: 'วัตถุดิบที่รับเข้าแล้วไม่ผ่าน spec — reject ทุก % คือ disruption ต่อ production plan',
+      target: 1.0, actual: 0.8, unit: '%', higher: false,
+      history: [1.5,1.4,1.3,1.2,1.1,1.0,0.9,0.8,0.7,0.8,0.8,0.8],
+      owner: 'QA + จัดซื้อ', partner: 'QA' },
+    { name: 'Key supplier fill rate (%)',
+      why: 'Supplier ส่งมอบตามสั่ง — fill rate ต่ำ = NAE ingredient ขาด → ไม่สามารถผลิตได้',
+      target: 98, actual: 96.8, unit: '%', higher: true,
+      history: [93.5,94.0,94.5,95.0,95.5,96.0,96.5,97.0,96.8,96.5,96.8,96.8],
+      owner: 'ผจก.จัดซื้อ', partner: '-' },
+  ]},
+  // คลังห้องเย็น: เลือก Temperature deviation (food safety critical), OTIF support, Inventory accuracy
+  { id: 'cold', name: 'คลังห้องเย็น', kpis: [
+    { name: 'Temperature deviation events',
+      why: 'Cold chain break = food safety risk + potential export ban — zero tolerance เป็น non-negotiable',
+      target: 0, actual: 1, unit: 'event', higher: false,
+      history: [3,2,2,1,1,1,0,0,1,2,1,1],
+      owner: 'ผจก.คลัง', partner: 'ซ่อมบำรุง' },
+    { name: 'OTIF support rate (%)',
+      why: 'คลังคือ final gate ก่อนส่งลูกค้า — OTIF ต่ำที่คลัง = shipping miss แม้ production จะ on-time',
+      target: 98, actual: 97.5, unit: '%', higher: true,
+      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.0,97.8,97.6,97.5,97.5],
+      owner: 'ผจก.คลัง + ขาย', partner: 'ขาย' },
+    { name: 'Inventory record accuracy (%)',
+      why: 'ความแม่นยำ inventory สะท้อนระบบควบคุมคลัง — ต่ำ = หาของไม่เจอ, ส่งผิด lot, recall risk',
+      target: 99.5, actual: 99.6, unit: '%', higher: true,
+      history: [99.0,99.1,99.2,99.3,99.5,99.6,99.7,99.6,99.5,99.6,99.7,99.6],
+      owner: 'ผจก.คลัง', partner: 'IT' },
+  ]},
+  // นำเข้า-ส่งออก: เลือก Export OTIF (output สุดท้ายที่ลูกค้าเห็น),
+  //   Documentation accuracy (root cause ของ delay), Clearance time (operational efficiency)
+  { id: 'imex', name: 'ฝ่ายนำเข้า-ส่งออก', kpis: [
+    { name: 'Export shipment OTIF (%)',
+      why: 'KPI ปลายทางที่ลูกค้าต่างประเทศวัด — miss OTIF ส่งออก = penalty + relationship damage',
+      target: 97, actual: 95.5, unit: '%', higher: true,
+      history: [93.0,93.5,94.0,94.5,95.0,95.5,96.0,96.5,95.8,95.5,95.4,95.5],
+      owner: 'ผจก.นำเข้า-ส่งออก + ขาย', partner: 'ขายส่งออก' },
+    { name: 'Documentation accuracy (%)',
+      why: 'เอกสารผิดพลาด = Customs delay, demurrage cost, cargo hold — root cause ของ OTIF miss',
+      target: 99.5, actual: 99.2, unit: '%', higher: true,
+      history: [98.0,98.2,98.5,98.8,99.0,99.1,99.2,99.3,99.2,99.1,99.2,99.2],
+      owner: 'ผจก.นำเข้า-ส่งออก', partner: '-' },
+    { name: 'Customs clearance time (วัน)',
+      why: 'Clearance เร็ว = cold chain ครบถ้วน + ลด demurrage — target 2 วัน เป็น best practice ไทย',
+      target: 2, actual: 1.8, unit: 'วัน', higher: false,
+      history: [2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8,1.9,2.0,1.8,1.8],
+      owner: 'ผจก.นำเข้า-ส่งออก', partner: '-' },
+  ]},
+  // HR: เลือก Attrition (retention), Critical role fill time (speed), Engagement (leading indicator)
+  { id: 'hr', name: 'ฝ่ายบุคคล', kpis: [
+    { name: 'Annual attrition rate (%)',
+      why: 'แรงงานแปรรูปอาหาร + ช่างเทคนิค NAE หายากมาก — attrition สูง = training cost + production risk',
+      target: 12, actual: 14.5, unit: '%', higher: false,
+      history: [16.5,16.0,15.5,15.0,14.8,14.5,14.2,14.0,14.5,14.5,14.5,14.5],
+      owner: 'ผจก.HR', partner: 'หัวหน้าหน่วย' },
+    { name: 'Critical role time-to-fill (วัน)',
+      why: 'ตำแหน่ง critical (สัตวแพทย์ NAE, QA, production supervisor) ว่างนาน = production risk ทันที',
+      target: 45, actual: 52, unit: 'วัน', higher: false,
+      history: [62,60,58,56,54,52,50,48,50,52,52,52],
+      owner: 'ผจก.HR', partner: 'หน่วยขอ' },
+    { name: 'Employee engagement score',
+      why: 'Leading indicator ของ attrition และ productivity — score ต่ำ 6-9 เดือนก่อน attrition พุ่ง',
+      target: 75, actual: 73, unit: '', higher: true,
+      history: [68,69,70,71,72,73,74,74,73,73,73,73],
+      owner: 'ผจก.HR', partner: '-' },
+  ]},
+];
+
+// ===== Strategic Pillar Assignments (วงกลมความมั่นคง 2026) =====
+// diff=ทำต่าง | value=มูลค่า,คุณค่า | quality=คุณภาพ | cost=ต้นทุน
+const PILLAR_META = {
+  diff:    { label: 'ทำต่าง',       cls: 'pillar-diff',    color: '#5B21B6' },
+  value:   { label: 'มูลค่า/คุณค่า', cls: 'pillar-value',   color: '#065F46' },
+  quality: { label: 'คุณภาพ',       cls: 'pillar-quality', color: '#1E40AF' },
+  cost:    { label: 'ต้นทุน',        cls: 'pillar-cost',    color: '#92400E' },
+};
+
+const PILLAR_ASSIGNMENTS = {
+  feed:       { 'FCR เฉลี่ยฟาร์ม (corrected)': 'cost', 'Formula accuracy': 'quality', 'Cost per ton vs budget': 'cost' },
+  gpps:       { 'Hatchability handed-off (from set)': 'quality', 'Reject chick rate': 'quality', '1st week mortality (broiler)': 'quality' },
+  hatch:      { 'Hatchability (from set)': 'quality', 'Chick quality (Pasgar score ≥7)': 'quality', 'Livability (chick to delivery)': 'quality' },
+  broiler:    { 'EPEF (NAE index)': 'cost', 'FCR corrected (NAE)': 'cost', 'NAE compliance': 'diff' },
+  cf:         { 'NAE compliance (CF group)': 'diff', 'EPEF avg (CF, NAE)': 'cost', '% farms passing full audit': 'quality' },
+  slaught:    { 'A Grade yield improvement (%)': 'value', 'Carcass yield (%)': 'cost', 'ต้นทุนการผลิต': 'cost' },
+  cooked:     { 'OEE (%)': 'cost', 'Process improvement rate (yield %)': 'cost', 'Value Added mix % (YTR/MARINADE/IVQF/BREADED)': 'value' },
+  export:     { 'Sales volume vs target': 'value', 'Forward Sales coverage (%)': 'value', 'Value Added mix % (YTR/MARINADE/IVQF/BREADED)': 'value' },
+  domestic:   { 'Sales volume vs target': 'value', 'Forward Sales coverage (%)': 'value', 'NPD penetration (%)': 'diff' },
+  frontdoor:  { 'Truck load utilization (%)': 'cost', 'No-order stock rate (%)': 'cost', 'Fresh-to-frozen diversion rate (%)': 'cost' },
+  fsc:        { 'OTIF delivery (%)': 'quality', 'Forward Sales coverage (%)': 'value', 'On-spec audit pass (%)': 'quality' },
+  feedsales:  { 'Sales volume vs target (%)': 'value', 'Gross margin (%)': 'value', 'Trial sample conversion rate (%)': 'value' },
+  procure:    { 'Purchase Price Variance vs benchmark (%)': 'cost', 'Incoming material reject rate (%)': 'quality', 'Key supplier fill rate (%)': 'quality' },
+  cold:       { 'Temperature deviation events': 'quality', 'OTIF support rate (%)': 'quality', 'Inventory record accuracy (%)': 'quality' },
+  imex:       { 'Export shipment OTIF (%)': 'quality', 'Documentation accuracy (%)': 'quality', 'Customs clearance time (วัน)': 'cost' },
+  hr:         { 'Annual attrition rate (%)': 'cost', 'Critical role time-to-fill (วัน)': 'cost', 'Employee engagement score': 'diff' },
+};
+
+// Apply pillar + pillarLabel to every KPI object
+UNITS.forEach(u => {
+  const map = PILLAR_ASSIGNMENTS[u.id] || {};
+  u.kpis.forEach(k => {
+    // match by name prefix in case minor name differences
+    const pillar = map[k.name] || Object.entries(map).find(([n]) => k.name.startsWith(n.slice(0,20)))?.[1] || 'cost';
+    k.pillar = pillar;
+  });
+});
+
+// ===== KPI Plain-language Explanations =====
+const KPI_EXPLAIN = {
+  'FCR เฉลี่ยฟาร์ม (corrected)': { easy:'ไก่กินอาหารกี่กิโลเพื่อได้เนื้อ 1 กิโล — ยิ่งน้อยยิ่งดี ต้นทุนค่าอาหารสัตว์คือ 65-70% ของต้นทุนทั้งหมด', formula:'FCR = น้ำหนักอาหารที่กิน ÷ น้ำหนักที่เพิ่ม (live weight)' },
+  'Formula accuracy': { easy:'สูตรอาหารสัตว์ผสมได้ตรงตามที่ออกแบบไว้กี่เปอร์เซ็นต์ — ผสมผิดแม้นิดเดียวไก่ได้สารอาหารไม่ครบ ส่งผลต่อ FCR โดยตรง', formula:'% batch ที่ทุก ingredient อยู่ใน ±0.5% ของสูตร' },
+  'Cost per ton vs budget': { easy:'ต้นทุนผลิตอาหารสัตว์ต่อตันสูงหรือต่ำกว่างบประมาณกี่เปอร์เซ็นต์ — NAE ใช้วัตถุดิบคุณภาพสูงกว่าปกติ ต้องไม่เกิน ±2% จาก standard', formula:'(ต้นทุนจริง - budget) ÷ budget × 100' },
+  'Hatchability handed-off (from set)': { easy:'จากไข่ทั้งหมดที่ใส่เข้าเครื่องฟัก ได้ลูกไก่คุณภาพดีส่งมอบให้ฟาร์มเนื้อได้กี่เปอร์เซ็นต์ — เป็น KPI สุดท้ายที่รวมทุกการสูญเสียของ GP/PS', formula:'จำนวนลูกไก่ที่ส่งมอบได้ ÷ จำนวนไข่ที่ตั้งฟัก × 100' },
+  'Reject chick rate': { easy:'ลูกไก่ที่คัดทิ้งไม่ส่งให้ฟาร์มเนื้อมีกี่เปอร์เซ็นต์ — ได้แก่ สะดือไม่แห้ง ขาแบะ ขาดน้ำ หรือตายแรกออก ยิ่งน้อยยิ่งดี', formula:'จำนวนลูกไก่ reject ÷ จำนวนลูกไก่ที่ฟักออกทั้งหมด × 100' },
+  '1st week mortality (broiler)': { easy:'ไก่เนื้อที่ตายใน 7 วันแรกมีกี่เปอร์เซ็นต์ — ถ้าสูงแสดงว่าลูกไก่ที่ส่งไปมีสุขภาพไม่ดี เป็น KPI ร่วมของ GP/PS, โรงฟัก และฟาร์มเนื้อ', formula:'จำนวนไก่ตายวันที่ 1-7 ÷ จำนวนไก่เข้าเล้า × 100' },
+  'Hatchability (from set)': { easy:'ไข่ที่ใส่เข้าเครื่องฟักได้ลูกไก่ออกมากี่เปอร์เซ็นต์ — เกณฑ์ดีของ Ross 308 NAE คือ >83%', formula:'จำนวนลูกไก่ที่ออก ÷ จำนวนไข่ที่ตั้งฟัก × 100' },
+  'Chick quality (Pasgar score ≥7)': { easy:'ลูกไก่ที่ผ่านเกณฑ์สุขภาพ ≥7 คะแนน (จาก 10) มีกี่เปอร์เซ็นต์ — ตรวจ 5 จุด ได้แก่ ขา สะดือ ตา ปาก และการเคลื่อนไหว ลูกไก่คะแนนสูง = โตเร็ว ตายน้อย', formula:'Pasgar score: 5 ด้าน × สูงสุด 2 คะแนน = รวม 10 คะแนน' },
+  'EPEF (NAE index)': { easy:'ดัชนีประสิทธิภาพการเลี้ยงไก่รวมทุกอย่างในตัวเลขเดียว — ยิ่งสูงยิ่งดี สะท้อนว่าไก่โตเร็ว ตายน้อย กินน้อย เลี้ยงสั้น NAE top quartile ≥330', formula:'EPEF = (Livability% × น้ำหนักเฉลี่ย kg) ÷ (FCR × อายุวัน) × 100' },
+  'FCR corrected (NAE)': { easy:'ไก่เนื้อกินอาหารกี่กิโลเพื่อได้เนื้อ 1 กิโล (ไม่นับตัวที่ตาย) — NAE ไม่ใช้ growth promoter จึง FCR สูงกว่าไก่ทั่วไปประมาณ 0.10-0.15', formula:'FCR = อาหารที่ใช้ ÷ น้ำหนักเพิ่ม (ไม่รวมตัวที่ตาย)' },
+  'NAE compliance': { easy:'ไก่ทุกตัวในฟาร์มไม่ได้รับยาปฏิชีวนะตลอดการเลี้ยงหรือเปล่า — ใช้ยาแม้แต่ครั้งเดียวทั้งล็อตต้องออกจากสาย NAE ทันที กระทบราคาและตลาดส่งออก', formula:'ล็อตที่ไม่มีการใช้ยาปฏิชีวนะ ÷ ล็อตทั้งหมด × 100' },
+  'NAE compliance (CF group)': { easy:'ฟาร์มคอนแทรคทั้งกลุ่มปฏิบัติตามมาตรฐาน NAE ครบทุกล็อตหรือเปล่า — ความเสี่ยงสูงกว่าฟาร์มเองเพราะดูแลได้ไม่ทั่วถึง 1 ฟาร์มใช้ยาก็กระทบทั้งกลุ่ม', formula:'ล็อต CF ที่ผ่าน NAE ÷ ล็อต CF ทั้งหมด × 100' },
+  'EPEF avg (CF, NAE)': { easy:'ค่าเฉลี่ย EPEF ของฟาร์มคอนแทรคทั้งกลุ่ม — ต่ำกว่าฟาร์มเอง 10-15 จุดเพราะ management แต่ละเจ้าไม่เท่ากัน ≥315 คือระดับดีสำหรับ CF NAE', formula:'EPEF = (Livability% × น้ำหนักเฉลี่ย kg) ÷ (FCR × อายุวัน) × 100' },
+  '% farms passing full audit': { easy:'ฟาร์มคอนแทรคที่ผ่านการตรวจ 3 ด้านพร้อมกัน (biosecurity, animal welfare, NAE protocol) มีกี่เปอร์เซ็นต์ — ฟาร์มที่ไม่ผ่านต้องแก้ไขก่อนรับล็อตใหม่', formula:'ฟาร์มที่ผ่าน full audit ÷ ฟาร์ม CF ทั้งหมด × 100' },
+  'Carcass yield (%)': { easy:'จากน้ำหนักไก่มีชีวิต ได้เนื้อไก่สดออกมากี่เปอร์เซ็นต์ — ยิ่งสูงยิ่งดี แปลว่าใช้น้ำหนักไก่มีชีวิตได้คุ้มค่า ส่งผลโดยตรงต่อปริมาณสินค้า', formula:'น้ำหนักซากสด (eviscerated chilled) ÷ น้ำหนักไก่มีชีวิต × 100' },
+  'ต้นทุนการผลิต': { easy:'ค่าใช้จ่ายชำแหละและแปรรูปไก่ต่อตัน ไม่รวมต้นทุนตัวไก่ — ครอบคลุม ค่าแรง พลังงาน น้ำ บรรจุภัณฑ์ QA และค่าเสื่อมเครื่องจักร ยิ่งต่ำยิ่งดี', formula:'ต้นทุนการผลิตรวม ÷ น้ำหนักผลิตทั้งหมด (ตัน)' },
+  'OEE (%)': { easy:'เครื่องจักรในโรงปรุงสุกถูกใช้งานได้เต็มประสิทธิภาพกี่เปอร์เซ็นต์ — วัด 3 ด้านพร้อมกัน คือพร้อมใช้งาน × ทำงานเร็ว × ผลิตของดี', formula:'OEE = Availability% × Performance% × Quality%' },
+  'Value Added mix % (YTR/MARINADE/IVQF/BREADED)': { easy:'สัดส่วน YTR (พร้อมทอด) MARINADE (หมักพร้อมปรุง) IVQF (แช่แข็งรายชิ้น) BREADED (เคลือบเกล็ดขนมปัง) ในยอดผลิต/ขายทั้งหมด — สินค้าเหล่านี้ margin สูงกว่าไก่ธรรมดา 2-5 เท่า', formula:'น้ำหนัก value-added ÷ น้ำหนักทั้งหมด × 100' },
+  'Sales volume vs target': { easy:'ยอดขายจริงเทียบกับเป้าหมาย — เกิน 100% แปลว่าขายได้มากกว่าที่วางแผน แสดงว่า demand แข็งแกร่ง', formula:'ยอดขายจริง (ตัน) ÷ เป้าหมาย (ตัน) × 100' },
+  'NPD penetration (%)': { easy:'สินค้าใหม่ที่เพิ่งเปิดตัวไม่เกิน 18 เดือน มีสัดส่วนในยอดขายในประเทศกี่เปอร์เซ็นต์ — สูงแปลว่ากลยุทธ์ทำต่างได้ผล ลูกค้าตอบรับสินค้าใหม่', formula:'ยอดขาย NPD (อายุ ≤18 เดือน) ÷ ยอดขายทั้งหมด × 100' },
+  'OTIF delivery (%)': { easy:'ส่งสินค้าให้ลูกค้า FSC (ร้านอาหาร โรงแรม สายการบิน) ครบจำนวนและตรงเวลากี่เปอร์เซ็นต์ — ลูกค้า FSC มี penalty ถ้า OTIF ต่ำกว่า 97%', formula:'ออเดอร์ที่ส่ง On-Time และ In-Full ÷ ออเดอร์ทั้งหมด × 100' },
+  'On-spec audit pass (%)': { easy:'สินค้าที่ส่ง FSC ผ่านการตรวจ spec ครบทุกรายการกี่เปอร์เซ็นต์ — ครอบคลุม น้ำหนัก ผลตรวจเชื้อ อุณหภูมิ และ labeling ถ้าตกสัญญาอาจถูกยกเลิก', formula:'จำนวน lot ที่ผ่าน spec ÷ จำนวน lot ทั้งหมดที่ตรวจ × 100' },
+  'Sales volume vs target (%)': { easy:'ยอดขายอาหารสัตว์ตลาดอิสระเทียบกับเป้าหมาย — ช่วยให้โรงงานผลิตเต็มกำลัง ไม่ปล่อยเครื่องจักรว่างในช่วง demand ภายในต่ำ', formula:'ยอดขายจริง ÷ เป้าหมาย × 100' },
+  'Internal capacity breach (events)': { easy:'จำนวนครั้งที่ฝ่ายขายตลาดอิสระดึงกำลังการผลิตจนโรงงานผลิตอาหารให้ฟาร์มตัวเองไม่ทัน — เป้าคือ 0 ครั้ง เพราะทุกครั้งที่เกิดจะกระทบ FCR ฟาร์มทั้งสาย', formula:'นับจำนวนครั้งที่เกิด capacity conflict ต่อเดือน' },
+  'Purchase Price Variance vs benchmark (%)': { easy:'ราคาที่ซื้อวัตถุดิบจริงต่างจากราคาตลาดอ้างอิงกี่เปอร์เซ็นต์ — ค่าติดลบ (เช่น -1.2%) หมายความว่าซื้อได้ถูกกว่าตลาด 1.2% แสดงว่าทีมจัดซื้อต่อรองเก่ง', formula:'(ราคาซื้อจริง - ราคา benchmark) ÷ ราคา benchmark × 100' },
+  'Incoming material reject rate (%)': { easy:'วัตถุดิบที่รับเข้ามาแล้วตรวจพบว่าไม่ผ่าน spec ต้องส่งคืนมีกี่เปอร์เซ็นต์ — ถ้าสูงแสดงว่า supplier มีปัญหาคุณภาพ', formula:'น้ำหนัก/lot ที่ reject ÷ ทั้งหมดที่รับเข้า × 100' },
+  'Key supplier fill rate (%)': { easy:'Supplier รายสำคัญส่งวัตถุดิบได้ตามที่สั่งกี่เปอร์เซ็นต์ — โดยเฉพาะ NAE ingredient ที่หายาก ถ้า fill rate ต่ำต้องหา supplier สำรองด่วน', formula:'ปริมาณที่ supplier ส่งได้จริง ÷ ปริมาณที่สั่ง × 100' },
+  'Temperature deviation events': { easy:'จำนวนครั้งที่อุณหภูมิห้องเย็นหลุดออกนอกช่วงที่กำหนดต่อเดือน — แม้แค่ชั่วคราว เชื้อแบคทีเรียอาจเพิ่มขึ้น กระทบ food safety และ shelf life ทั้ง lot', formula:'นับจำนวนครั้งที่ temp log บันทึกค่านอกช่วง ±1°C' },
+  'OTIF support rate (%)': { easy:'คลังจัดสินค้าให้ขนส่งได้ตรงเวลาและครบจำนวนกี่เปอร์เซ็นต์ — คลังคือ gate สุดท้ายก่อนออกสู่ลูกค้า ถ้าคลังช้าหรือหาของไม่เจอ ทั้งสายส่งช้าหมด', formula:'ออเดอร์ที่คลังส่งได้ตรงเวลาและครบ ÷ ออเดอร์ทั้งหมด × 100' },
+  'Inventory record accuracy (%)': { easy:'ข้อมูลสต็อกในระบบตรงกับของจริงในห้องเย็นกี่เปอร์เซ็นต์ — ถ้าไม่ตรงจะหาของไม่เจอ ส่งผิด lot ผิดวันหมดอายุ และเสี่ยง recall สินค้า', formula:'จำนวน SKU/lot ที่ข้อมูลตรงกัน ÷ จำนวน SKU/lot ที่ตรวจ × 100' },
+  'Export shipment OTIF (%)': { easy:'สินค้าส่งออกที่ลูกค้าต่างประเทศรับได้ตรงเวลาและครบจำนวนมีกี่เปอร์เซ็นต์ — ลูกค้าต่างประเทศใช้ตัวเลขนี้วัดผลเราโดยตรง ต่ำกว่า target อาจถูก penalty', formula:'Shipment ที่ลูกค้ายืนยันตรงเวลาและครบ ÷ shipment ทั้งหมด × 100' },
+  'Documentation accuracy (%)': { easy:'เอกสารส่งออก (Invoice, Packing List, Health Cert, CO) ถูกต้องไม่ต้องแก้ไขกี่เปอร์เซ็นต์ — เอกสารผิดทำให้ Customs กักสินค้า เสียค่า demurrage และ cold chain ขาดตอน', formula:'Shipment ที่เอกสารถูกต้อง 100% ÷ shipment ทั้งหมด × 100' },
+  'Customs clearance time (วัน)': { easy:'ใช้เวลากี่วันในการผ่านพิธีการศุลกากร — ยิ่งเร็วยิ่งดี เพราะลดค่า demurrage รักษา cold chain และสินค้าถึงมือลูกค้าเร็วขึ้น', formula:'วันที่ Customs อนุมัติ - วันที่ยื่นเอกสาร (เฉลี่ยต่อ shipment)' },
+  'Annual attrition rate (%)': { easy:'พนักงานที่ลาออกหรือถูกเลิกจ้างในรอบ 1 ปีมีกี่เปอร์เซ็นต์ — สายการผลิต NAE ต้องการพนักงานที่มีทักษะเฉพาะ ถ้าคนออกมากต้องหาใหม่ฝึกใหม่ เสียต้นทุนมาก', formula:'จำนวนพนักงานที่ออกใน 12 เดือน ÷ พนักงานเฉลี่ยทั้งหมด × 100' },
+  'Critical role time-to-fill (วัน)': { easy:'ตำแหน่งสำคัญที่ว่างใช้เวลากี่วันกว่าจะหาคนมาทดแทน — ตำแหน่งสำคัญ เช่น สัตวแพทย์ NAE, QA supervisor ว่างนาน = ความเสี่ยง production ทันที', formula:'วันที่ปิดตำแหน่ง - วันที่ตำแหน่งว่าง (เฉลี่ยทุก critical role)' },
+  'Livability (chick to delivery)': { easy:'อัตราการมีชีวิตรอดของลูกไก่ตั้งแต่ฟักออกจนถึงส่งมอบให้ฟาร์มเนื้อ — สะท้อนคุณภาพการจัดการหลังฟัก การขนส่ง และ biosecurity ของโรงฟัก ยิ่งสูงยิ่งดี target ≥98.5%', formula:'จำนวนลูกไก่ที่ส่งมอบสำเร็จ ÷ จำนวนลูกไก่ที่ฟักออกทั้งหมด × 100' },
+  'A Grade yield improvement (%)': { easy:'สัดส่วนซากไก่ที่ผ่านมาตรฐาน A Grade (ไม่มีรอยฟกช้ำ ขาสมบูรณ์ น้ำหนักในช่วง spec) — เป้าคือลด defect ต่อเนื่อง ทุก 1% ที่เพิ่ม = premium revenue ต่างจาก B/C ถึง 15-25 บาท/kg', formula:'น้ำหนัก A Grade ÷ น้ำหนักทั้งหมดที่ชำแหละ × 100' },
+  'Process improvement rate (yield %)': { easy:'yield ของสาย value-added คือน้ำหนักสินค้าสำเร็จต่อน้ำหนักวัตถุดิบที่รับเข้า — ยิ่งสูงยิ่งดี แปลว่า trim loss น้อยและกระบวนการแม่นยำ ลดต้นทุนโดยตรงโดยไม่ลด volume', formula:'น้ำหนักสินค้า VA สำเร็จ ÷ น้ำหนักวัตถุดิบรับเข้า × 100' },
+  'Forward Sales coverage (%)': { easy:'ยอดขายที่ลูกค้ายืนยัน (confirmed PO) ล่วงหน้าก่อนเดือนผลิต มีสัดส่วนกี่เปอร์เซ็นต์ของแผนการผลิต — ยิ่งสูงยิ่งลดความเสี่ยงของสินค้าค้างสต็อกและช่วยให้ S&OP วางแผนได้แม่นยำขึ้น', formula:'Volume ที่ลูกค้า confirm ล่วงหน้า ÷ Monthly production plan × 100' },
+  'Truck load utilization (%)': { easy:'น้ำหนักสินค้าที่บรรทุกจริงต่อความจุสูงสุดของรถ — ขายให้เต็มคันรถต่อเที่ยวลดต้นทุนขนส่งต่อ kg และเพิ่ม revenue ต่อเที่ยว target ≥90%', formula:'น้ำหนักสินค้าจริง ÷ ความจุรถสูงสุด × 100' },
+  'No-order stock rate (%)': { easy:'สัดส่วนสินค้าในมือที่ยังไม่มี customer order รองรับ — stock ที่ไม่มี order เสี่ยงค้างและต้องลดราคาหรือทิ้ง เป้าคือลดให้ต่ำกว่า 5% ของ stock ทั้งหมด', formula:'น้ำหนัก stock ที่ไม่มี order ÷ stock ทั้งหมด × 100' },
+  'Fresh-to-frozen diversion rate (%)': { easy:'สัดส่วนสินค้าสดที่ต้องเข้า freezer เพราะขายไม่หมดในวัน — frozen margin ต่ำกว่า fresh และ shelf life สั้นลง ยิ่งน้อยยิ่งดี target ≤8%', formula:'น้ำหนักที่โอนเข้า freezer ÷ น้ำหนักรับเข้าทั้งหมด × 100' },
+  'Trial sample conversion rate (%)': { easy:'ลูกค้าที่ได้รับสินค้าตัวอย่างแล้วสั่งซื้อจริงภายใน 60 วันมีกี่เปอร์เซ็นต์ — วัดประสิทธิภาพการขยายฐานลูกค้าใหม่ในตลาดอิสระ conversion สูงแสดงว่าสินค้าตรงกับ need ลูกค้า', formula:'จำนวนลูกค้าที่ convert ÷ จำนวนลูกค้าที่รับ sample × 100' },
+  'Employee engagement score': { easy:'คะแนนความผูกพันของพนักงานที่มีต่อองค์กร จากแบบสำรวจรายปี — ถ้าคะแนนต่ำ 6-9 เดือนต่อมามักเห็นอัตราการลาออกพุ่งสูง เป็น early warning signal', formula:'คะแนนเฉลี่ยจาก 5 หัวข้อ engagement survey (0-100 คะแนน)' },
+};
+
+function kpiTooltipHtml(kpiName) {
+  const ex = KPI_EXPLAIN[kpiName];
+  if (!ex) return '';
+  const formula = ex.formula ? `<div class="tt-formula">📐 ${ex.formula}</div>` : '';
+  return `<span class="kpi-info-btn" title="">i</span><div class="kpi-tooltip"><div class="tt-label">💡 คำอธิบาย</div>${ex.easy}${formula}</div>`;
+}
+
+function calcStatus(kpi) {
+  const { target, actual, higher, tolerance } = kpi;
+  if (tolerance !== undefined) {
+    const absDev = Math.abs(actual - target);
+    if (absDev <= tolerance) return 'on';
+    if (absDev <= tolerance * 1.5) return 'warn';
+    return 'off';
+  }
+  if (target === 0 && !higher) {
+    if (actual === 0) return 'on';
+    if (actual === 1) return 'warn';
+    return 'off';
+  }
+  let delta;
+  if (higher) delta = (actual - target) / target;
+  else delta = (target - actual) / Math.max(Math.abs(target), 0.01);
+  if (delta >= -0.02) return 'on';
+  if (delta >= -0.07) return 'warn';
+  return 'off';
+}
+
+function statusLabel(s) { return s === 'on' ? 'On track' : s === 'warn' ? 'ต้องเฝ้าระวัง' : 'วิกฤต'; }
+
+function deltaText(kpi) {
+  const { target, actual, unit } = kpi;
+  const diff = actual - target;
+  const pct = target !== 0 ? (diff / Math.abs(target)) * 100 : 0;
+  const sign = diff >= 0 ? '+' : '';
+  if (Math.abs(diff) < 0.001) return '—';
+  if (unit === '%' || unit === '') return `${sign}${diff.toFixed(diff < 1 && Math.abs(diff) > 0 ? 2 : 1)}`;
+  return `${sign}${diff.toFixed(1)} (${sign}${pct.toFixed(1)}%)`;
+}
+
+function deltaClass(kpi) {
+  const s = calcStatus(kpi);
+  return s === 'on' ? 'good' : s === 'warn' ? 'warn' : 'bad';
+}
+
+function formatNum(v) {
+  return v.toLocaleString('th-TH', { maximumFractionDigits: Math.abs(v) < 10 && Math.abs(v) > 0 ? 2 : 1 });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== TAB 1 — Overview =====
+function renderCorporateKpis() {
+  document.getElementById('corporateKpiGrid').innerHTML = CORPORATE_KPIS.map(k => {
+    const status = calcStatus(k);
+    const cls = status === 'on' ? 'good' : status === 'warn' ? 'warn' : 'bad';
+    const diff = k.value - k.target;
+    const sign = diff >= 0 ? '+' : '';
+    const diffStr = Math.abs(diff) < 0.001 ? 'on target' : `${sign}${diff.toFixed(diff < 1 && Math.abs(diff) > 0 ? 2 : 1)}`;
+    const pm = PILLAR_META[k.pillar] || PILLAR_META.cost;
+    return `<div class="kpi-card">
+      <div style="margin-bottom:6px;"><span class="pillar-badge ${pm.cls}">${pm.label}</span></div>
+      <div class="label">${k.label}</div>
+      <div class="value">${k.value.toLocaleString('th-TH', {maximumFractionDigits:1})}<span class="unit">${k.unit}</span></div>
+      <div class="meta"><span class="target">target ${k.target}${k.unit}</span><span class="delta ${cls}"><span class="status-dot"></span>${diffStr}</span></div>
+    </div>`;
+  }).join('');
+}
+
+let overviewChart, unitChart;
+function renderOverviewCharts() {
+  const cost  = CORPORATE_KPIS[0];
+  const fcAcc = CORPORATE_KPIS[2];
+  const costData  = getCYData(cost.history,  chartYear);
+  const fcData    = getCYData(fcAcc.history, chartYear);
+  // Future-zone background: shade months after ACTUAL_THRU for current year
+  const futureStart = chartYear === CURRENT_YEAR ? ACTUAL_THRU : null;
+
+  // Inline plugin: วาด rectangle สีเทาอ่อนคลุมเดือนในอนาคต (ไม่กระทบ Y-axis)
+  const futureZonePlugin = {
+    id: 'futureZone',
+    beforeDraw(chart) {
+      if (futureStart === null || futureStart >= 12) return;
+      const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+      const x0 = x.getPixelForValue(futureStart - 0.5);
+      const x1 = x.getPixelForValue(11.5);
+      ctx.save();
+      ctx.fillStyle = 'rgba(243,244,246,0.7)';
+      ctx.fillRect(x0, top, x1 - x0, bottom - top);
+      ctx.strokeStyle = 'rgba(209,213,219,0.6)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, bottom); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  if (overviewChart) overviewChart.destroy();
+  overviewChart = new Chart(document.getElementById('overviewChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: MONTHS,
+      datasets: [
+        { label: 'End-to-end cost (บาท/kg)', data: costData,
+          borderColor: '#1f3864', backgroundColor: 'rgba(31,56,100,0.08)',
+          tension: 0.3, yAxisID: 'y', pointRadius: 3, pointHoverRadius: 5,
+          borderWidth: 2, spanGaps: false },
+        { label: 'Cost target', data: Array(12).fill(cost.target),
+          borderColor: '#1f3864', borderDash: [4,4], pointRadius: 0,
+          borderWidth: 1, yAxisID: 'y', fill: false },
+        { label: 'Forecast accuracy (%)', data: fcData,
+          borderColor: '#0f766e', backgroundColor: 'rgba(15,118,110,0.08)',
+          tension: 0.3, yAxisID: 'y1', pointRadius: 3, pointHoverRadius: 5,
+          borderWidth: 2, spanGaps: false },
+        { label: 'Forecast target', data: Array(12).fill(fcAcc.target),
+          borderColor: '#0f766e', borderDash: [4,4], pointRadius: 0,
+          borderWidth: 1, yAxisID: 'y1', fill: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Sarabun', size: 11 }, boxWidth: 8, padding: 10 } },
+        tooltip: { titleFont: { family: 'Sarabun' }, bodyFont: { family: 'Sarabun' } }
+      },
+      scales: {
+        y:  { type: 'linear', position: 'left',
+              title: { display: true, text: 'บาท/kg', font: { family: 'Sarabun', size: 11 } },
+              grid: { color: '#f3f4f6' }, ticks: { font: { family: 'Sarabun', size: 11 } } },
+        y1: { type: 'linear', position: 'right',
+              title: { display: true, text: '%', font: { family: 'Sarabun', size: 11 } },
+              grid: { display: false }, ticks: { font: { family: 'Sarabun', size: 11 } } },
+        x:  { grid: { color: '#f3f4f6' }, ticks: { font: { family: 'Sarabun', size: 11 },
+              color: ctx => (futureStart !== null && ctx.index >= futureStart) ? '#d1d5db' : '#4b5563' } }
+      }
+    },
+    plugins: [futureZonePlugin]
+  });
+
+  const unitNames = UNITS.map(u => u.name);
+  const onPct = UNITS.map(u => {
+    const kpis = getUnitKpis(u.id);
+    return Math.round((kpis.filter(k => calcStatus(k) === 'on').length / kpis.length) * 100);
+  });
+  const colors = onPct.map(v => v >= 80 ? '#10b981' : v >= 60 ? '#f59e0b' : '#ef4444');
+  if (unitChart) unitChart.destroy();
+  unitChart = new Chart(document.getElementById('unitChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels: unitNames, datasets: [{ data: onPct, backgroundColor: colors, borderRadius: 3, barThickness: 14 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.parsed.x}% on-target` }, titleFont: { family: 'Sarabun' }, bodyFont: { family: 'Sarabun' } } },
+      scales: {
+        x: { min: 0, max: 100, grid: { color: '#f3f4f6' }, ticks: { font: { family: 'Sarabun', size: 10 }, callback: v => v+'%' } },
+        y: { grid: { display: false }, ticks: { font: { family: 'Sarabun', size: 10 }, autoSkip: false } }
+      }
+    }
+  });
+}
+
+function buildBottlenecks() {
+  const themes = [
+    { title: 'คอขวด: คุณภาพลูกไก่ต้นน้ำ → กระทบทั้งสาย', tag: 'CRITICAL', cls: '',
+      desc: '1st week mortality 1.3% เกิน target 1.0% / chick uniformity CV 9.2% เกิน 8% / reject chick 2.4% เกิน 2% ส่งผลให้ FCR ฟาร์ม 1.65 (vs 1.60), EPEF 392 (vs 400), yield ที่โรงชำแหละ 72.5% (vs 73%)',
+      impact: '<strong>ผลกระทบรวม:</strong> end-to-end cost สูงขึ้นประมาณ 0.8 บาท/kg saleable meat<br><strong>หน่วยที่ต้องร่วม:</strong> GP/PS × โรงฟัก × ฟาร์ม × สัตวแพทย์ × R&D' },
+    { title: 'Forecast accuracy ต่ำกว่า target', tag: 'CRITICAL', cls: '',
+      desc: 'Forecast accuracy ระดับบริษัท 76.2% (target 80%) ฝ่ายขายส่งออกต่ำสุด 74% ทำให้เกิด overstock + stockout สลับกัน กระทบ Group OTIF (96.4%) และ working capital',
+      impact: '<strong>action:</strong> ทบทวน S&OP demand review, training ฝ่ายขาย, เพิ่มน้ำหนัก KPI forecast accuracy ในโบนัส' },
+    { title: 'Yield ที่โรงชำแหละต่ำกว่า target ทั้งฟาร์มเองและ CF', tag: 'WARN', cls: 'warn',
+      desc: 'Carcass yield ฟาร์มเอง 72.5% (target 73%) และ CF 71.2% (target 72%) ทำให้ Grade A export 78.5% (vs 80%) กระทบ premium mix',
+      impact: '<strong>ราก cause:</strong> uniformity ที่ฟาร์ม + handling stress<br><strong>ร่วม:</strong> ฟาร์ม × CF × โรงชำแหละ × โลจิสติกส์' },
+    { title: 'OTIF ส่งออก 95.5% — ห่าง target 1.5 จุด', tag: 'WARN', cls: 'warn',
+      desc: 'OTIF for export 95.5% (target 97%) แม้ customs clearance on-target (1.8 วัน) แต่ documentation accuracy 99.2% ยังมี amendment และคลังห้องเย็น OTIF support 97.5% (target 98%)',
+      impact: '<strong>action:</strong> ทบทวน documentation workflow, เพิ่ม buffer time ที่คลัง, ประชุม weekly กับ shipping forwarder' },
+    { title: 'NAE compliance CF 99.6% — ห้ามให้หลุดอีก', tag: 'WARN', cls: 'warn',
+      desc: 'NAE compliance CF 99.6% (target 100%) มี deviation 0.4%/เดือน หากสะสมจะกระทบสถานะ NAE certification ทั้งสายและส่งออกตลาด EU/UK/Japan',
+      impact: '<strong>action:</strong> เพิ่มความถี่ audit CF, training สัตวแพทย์ประจำกลุ่ม CF, whistleblower channel' },
+    { title: 'Capacity allocation discipline (อาหารตลาดอิสระ)', tag: 'WARN', cls: 'warn',
+      desc: 'มี allocation event เดือนละ 1 ครั้ง ที่อาหารตลาดอิสระดึง capacity จากการผลิตอาหารใช้ภายใน เกิด internal stockout 1 ครั้ง/เดือนใน 3 เดือนล่าสุด',
+      impact: '<strong>action:</strong> S&OP allocate capacity เด็ดขาด, เพิ่มน้ำหนัก discipline ใน KPI ฝ่ายขายตลาดอิสระ' },
+    { title: 'Attrition 14.5% — เกิน target 12%', tag: 'INFO', cls: 'info',
+      desc: 'Attrition 14.5% (target 12%) และ time-to-fill 52 วัน (target 45) ส่งสัญญาณ employer brand หรือ retention package ต้องทบทวน',
+      impact: '<strong>action:</strong> exit interview analysis, market salary benchmark, engagement survey deep-dive' },
+  ];
+  document.getElementById('bottleneckGrid').innerHTML = themes.map(t => `
+    <div class="bottleneck-card ${t.cls}">
+      <div class="bn-title"><span>${t.title}</span><span class="bn-tag">${t.tag}</span></div>
+      <div class="bn-desc">${t.desc}</div>
+      <div class="bn-impact">${t.impact}</div>
+    </div>`).join('');
+}
+
+let activeFilter = 'all';
+function renderFilters() {
+  const groups = [
+    { id: 'all',     label: 'ทั้งหมด' },
+    { id: 'upstream', label: 'ต้นน้ำ' },
+    { id: 'process',  label: 'แปรรูป' },
+    { id: 'sales',    label: 'ฝ่ายขาย' },
+    { id: 'support',  label: 'หน่วยสนับสนุน' },
+    { id: 'critical', label: '⚠ KPI วิกฤต' },
+    { id: 'p_diff',    label: '🎯 ทำต่าง' },
+    { id: 'p_value',   label: '💎 มูลค่า' },
+    { id: 'p_quality', label: '⭐ คุณภาพ' },
+    { id: 'p_cost',    label: '⚙️ ต้นทุน' },
+  ];
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = groups.map(g => `<button class="filter-chip ${g.id===activeFilter?'active':''}" data-id="${g.id}">${g.label}</button>`).join('');
+  bar.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+    activeFilter = btn.dataset.id;
+    renderFilters();
+    renderTable();
+  }));
+}
+
+function isUnitMatch(unit) {
+  if (activeFilter === 'all' || activeFilter === 'critical') return true;
+  if (activeFilter.startsWith('p_')) return true; // pillar filter shows all units but filters KPIs
+  const groups = {
+    upstream: ['feed','gpps','broiler','cf','hatch'],
+    process:  ['slaught','cooked','cold'],
+    sales:    ['export','domestic','frontdoor','fsc','feedsales'],
+    support:  ['procure','imex','hr'],
+  };
+  return groups[activeFilter] && groups[activeFilter].includes(unit.id);
+}
+
+function achievementBar(kpi) {
+  const { target, actual, higher, tolerance, unit } = kpi;
+  const status = calcStatus(kpi);
+
+  // Calculate achievement % 
+  let pct;
+  if (tolerance !== undefined) {
+    // Tolerance KPIs: 100% = deviation ≤ tolerance, degrade proportionally
+    const absDev = Math.abs(actual - target);
+    pct = Math.max(0, Math.round((1 - absDev / (tolerance * 2)) * 100));
+  } else if (target === 0 && !higher) {
+    // Zero-target: 0 events = 100%, each event = -25%
+    pct = Math.max(0, 100 - actual * 25);
+  } else if (higher) {
+    pct = target !== 0 ? Math.round((actual / target) * 100) : 100;
+  } else {
+    // Lower-is-better: perfect = actual ≤ target
+    pct = target !== 0 ? Math.round((target / Math.max(actual, 0.0001)) * 100) : 100;
+  }
+
+  const barPct = Math.min(pct, 100); // bar width capped at 100%
+  const color = status === 'on' ? '#10b981' : status === 'warn' ? '#f59e0b' : '#ef4444';
+  const textColor = status === 'on' ? '#047857' : status === 'warn' ? '#b45309' : '#b91c1c';
+  const displayPct = pct > 100 ? `>${100}%` : `${pct}%`;
+
+  return `<div class="achieve-wrap">
+    <div class="achieve-bar-bg">
+      <div class="achieve-bar-fill" style="width:${barPct}%;background:${color};"></div>
+    </div>
+    <span class="achieve-pct" style="color:${textColor};">${displayPct}</span>
+  </div>`;
+}
+
+// Track which units are expanded in the overview KPI table
+const expandedUnits = new Set();
+
+function renderTable() {
+  const tbody = document.getElementById('kpiTableBody');
+  const pillarFilter = activeFilter.startsWith('p_') ? activeFilter.slice(2) : null;
+  let html = '';
+  UNITS.forEach(u => {
+    if (!isUnitMatch(u)) return;
+    let kpis = getUnitKpis(u.id);
+    if (activeFilter === 'critical') {
+      kpis = kpis.filter(k => calcStatus(k) !== 'on');
+      if (kpis.length === 0) return;
+    }
+    if (pillarFilter) {
+      kpis = kpis.filter(k => k.pillar === pillarFilter);
+      if (kpis.length === 0) return;
+    }
+    const allKpis = getUnitKpis(u.id);
+    const onCount = allKpis.filter(k => calcStatus(k) === 'on').length;
+    const warnCount = allKpis.filter(k => calcStatus(k) === 'warn').length;
+    const offCount = allKpis.filter(k => calcStatus(k) === 'off').length;
+    const isExpanded = expandedUnits.has(u.id) || activeFilter === 'critical' || !!pillarFilter;
+    const expandedClass = isExpanded ? ' expanded' : '';
+    const summaryHtml = `<span style="font-weight:400;font-size:11px;margin-left:8px;display:inline-flex;gap:8px;">
+      <span style="color:#047857;">● ${onCount} on</span>
+      <span style="color:#b45309;">● ${warnCount} warn</span>
+      <span style="color:#b91c1c;">● ${offCount} critical</span>
+    </span>`;
+    html += `<tr class="unit-row${expandedClass}" data-unit="${u.id}"><td colspan="7"><span class="chevron">▶</span>${u.name}${summaryHtml}</td></tr>`;
+    kpis.forEach(k => {
+      const status = calcStatus(k);
+      const dCls = deltaClass(k);
+      const rowStyle = isExpanded ? '' : 'display:none;';
+      const pm = PILLAR_META[k.pillar] || PILLAR_META.cost;
+      const pillarBadge = `<span class="pillar-badge ${pm.cls}">${pm.label}</span>`;
+      html += `<tr class="kpi-row-detail" data-unit-parent="${u.id}" style="${rowStyle}">
+        <td><div style="display:flex;flex-direction:column;gap:3px;">${pillarBadge}<div class="kpi-name-wrap"><span>${k.name}</span>${kpiTooltipHtml(k.name)}</div></div></td>
+        <td class="right">${formatNum(k.target)}${k.unit ? ' '+k.unit : ''}</td>
+        <td class="right" style="font-weight:500;">${formatNum(k.actual)}${k.unit ? ' '+k.unit : ''}</td>
+        <td class="right"><span class="delta ${dCls}">${deltaText(k)}</span></td>
+        <td class="center">${achievementBar(k)}</td>
+        <td class="center"><span class="status-pill ${status}"><span class="status-dot"></span>${statusLabel(status)}</span></td>
+        <td style="font-size:11.5px;color:#6b7280;">${k.owner}${k.partner && k.partner !== '-' ? ' / <span style="color:#1f3864;">'+k.partner+'</span>' : ''}</td>
+      </tr>`;
+    });
+  });
+  tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:24px;color:#9ca3af;">ไม่มีข้อมูลตามเงื่อนไขที่เลือก</td></tr>';
+}
+
+// Click handler for expand/collapse — wired once, after init
+function initTableInteraction() {
+  const tbody = document.getElementById('kpiTableBody');
+  tbody.addEventListener('click', (e) => {
+    const row = e.target.closest('tr.unit-row');
+    if (!row) return;
+    const id = row.dataset.unit;
+    if (expandedUnits.has(id)) expandedUnits.delete(id);
+    else expandedUnits.add(id);
+    // Toggle without full re-render for smoother UX
+    const expanded = row.classList.toggle('expanded');
+    document.querySelectorAll(`tr[data-unit-parent="${id}"]`).forEach(r => {
+      r.style.display = expanded ? '' : 'none';
+    });
+  });
+}
+
+// ===== TAB 2 — Trends =====
+const trendChartInstances = [];
+function destroyTrendCharts() {
+  trendChartInstances.forEach(c => { try { c.destroy(); } catch(e){} });
+  trendChartInstances.length = 0;
+}
+
+function makeMiniChart(canvas, kpi) {
+  const cyData     = getCYData(kpi.history, chartYear);
+  const targetLine = Array(12).fill(kpi.target);
+  const status = calcStatus(kpi);
+  const color  = status === 'on' ? '#10b981' : status === 'warn' ? '#f59e0b' : '#ef4444';
+  const futureStart = chartYear === CURRENT_YEAR ? ACTUAL_THRU : null;
+
+  // Inline plugin: วาด rectangle สีเทาอ่อนคลุมเดือนในอนาคต (ไม่กระทบ Y-axis)
+  const futureZonePlugin = {
+    id: 'futureZone',
+    beforeDraw(chart) {
+      if (futureStart === null || futureStart >= 12) return;
+      const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+      const x0 = x.getPixelForValue(futureStart - 0.5);
+      const x1 = x.getPixelForValue(11.5);
+      ctx.save();
+      ctx.fillStyle = 'rgba(243,244,246,0.75)';
+      ctx.fillRect(x0, top, x1 - x0, bottom - top);
+      ctx.strokeStyle = 'rgba(209,213,219,0.7)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, bottom); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  return new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: MONTHS,
+      datasets: [
+        { label: 'Actual', data: cyData,
+          borderColor: color, backgroundColor: color + '18',
+          tension: 0.35, pointRadius: 3, pointHoverRadius: 5,
+          borderWidth: 2, fill: true, spanGaps: false },
+        { label: 'Target', data: targetLine,
+          borderColor: '#9ca3af', borderDash: [4,4],
+          pointRadius: 0, borderWidth: 1, fill: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          titleFont: { family: 'Sarabun' }, bodyFont: { family: 'Sarabun' },
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}${kpi.unit||''}` }
+        }
+      },
+      scales: {
+        y: { grid: { color: '#f3f4f6' }, ticks: { font: { family: 'Sarabun', size: 10 } } },
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'Sarabun', size: 10 },
+            color: ctx => (futureStart !== null && ctx.index >= futureStart) ? '#d1d5db' : '#4b5563'
+          }
+        }
+      }
+    },
+    plugins: [futureZonePlugin]
+  });
+}
+
+function renderCorpTrends() {
+  const grid = document.getElementById('corpTrendsGrid');
+  grid.innerHTML = CORPORATE_KPIS.map((k, i) => {
+    const status = calcStatus(k);
+    const cls = status === 'on' ? 'good' : status === 'warn' ? 'warn' : 'bad';
+    const diff = k.value - k.target;
+    const sign = diff >= 0 ? '+' : '';
+    const diffStr = Math.abs(diff) < 0.001 ? 'on target' : `${sign}${diff.toFixed(diff < 1 && Math.abs(diff) > 0 ? 2 : 1)}`;
+    return `<div class="chart-card">
+      <div class="chart-card-title">${k.label}</div>
+      <div class="chart-card-sub">เดือนปัจจุบัน <strong>${formatNum(k.value)}${k.unit}</strong> · target ${k.target}${k.unit} · <span class="delta ${cls}">${diffStr}</span></div>
+      <div class="chart-wrap"><canvas id="corp-${i}"></canvas></div>
+    </div>`;
+  }).join('');
+  CORPORATE_KPIS.forEach((k, i) => {
+    trendChartInstances.push(makeMiniChart(document.getElementById('corp-'+i), k));
+  });
+}
+
+function populateUnitSelect() {
+  document.getElementById('trendUnitSelect').innerHTML = UNITS.map((u, i) => `<option value="${i}">${u.name}</option>`).join('');
+}
+
+function renderUnitTrends(unitIndex) {
+  destroyTrendCharts();
+  renderCorpTrends();
+  const unit = UNITS[unitIndex];
+  const kpisForTrend = getUnitKpis(unit.id);
+  const grid = document.getElementById('unitTrendsGrid');
+  grid.innerHTML = kpisForTrend.map((k, i) => {
+    const status = calcStatus(k);
+    const cls = status === 'on' ? 'good' : status === 'warn' ? 'warn' : 'bad';
+    const diff = k.actual - k.target;
+    const sign = diff >= 0 ? '+' : '';
+    const diffStr = Math.abs(diff) < 0.001 ? 'on target' : `${sign}${diff.toFixed(diff < 1 && Math.abs(diff) > 0 ? 2 : 1)}`;
+    return `<div class="chart-card">
+      <div class="chart-card-title">${unit.name} — ${k.name}</div>
+      <div class="chart-card-sub">เดือนปัจจุบัน <strong>${formatNum(k.actual)}${k.unit}</strong> · target ${formatNum(k.target)}${k.unit} · <span class="delta ${cls}">${diffStr}</span></div>
+      <div class="chart-wrap"><canvas id="unit-${i}"></canvas></div>
+    </div>`;
+  }).join('');
+  kpisForTrend.forEach((k, i) => {
+    trendChartInstances.push(makeMiniChart(document.getElementById('unit-'+i), k));
+  });
+}
+
+// ===== TAB 3 — Daily input =====
+
+const CUSTOM_KEY = 'poultryCustomKPI_v1';
+
+function loadCustomKpis() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || '{}'); } catch { return {}; }
+}
+function saveCustomKpis(data) {
+  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(data)); } catch(e) {}
+}
+// Get effective KPI list for a unit (custom overrides original)
+function getUnitKpis(unitId) {
+  const custom = loadCustomKpis()[unitId];
+  if (!custom) return UNITS.find(u => u.id === unitId).kpis;
+  return custom;
+}
+// Persist custom KPI edits
+function saveKpiEdit(unitId, kpiIndex, field, value) {
+  const data = loadCustomKpis();
+  if (!data[unitId]) {
+    // Clone original kpis for this unit
+    data[unitId] = JSON.parse(JSON.stringify(UNITS.find(u => u.id === unitId).kpis));
+  }
+  if (data[unitId][kpiIndex]) {
+    data[unitId][kpiIndex][field] = value;
+  }
+  saveCustomKpis(data);
+}
+
+const STORAGE_KEY = 'poultryDashDaily_v1';
+
+function loadDailyData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveDailyData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch (e) { console.warn('Cannot save:', e); }
+}
+
+function setDailyValue(date, unitId, kpiName, field, value) {
+  const data = loadDailyData();
+  if (!data[date]) data[date] = {};
+  if (!data[date][unitId]) data[date][unitId] = {};
+  if (!data[date][unitId][kpiName]) data[date][unitId][kpiName] = {};
+  data[date][unitId][kpiName][field] = value;
+  saveDailyData(data);
+}
+
+function checkDailyStatus(kpi, actualVal) {
+  if (actualVal === '' || actualVal === null || actualVal === undefined || isNaN(parseFloat(actualVal))) return null;
+  return calcStatus({ ...kpi, actual: parseFloat(actualVal) });
+}
+
+function renderDailyInput() {
+  const container = document.getElementById('dailyBlocks');
+  const date = document.getElementById('dailyDate').value;
+  const dayData = (loadDailyData())[date] || {};
+
+  container.innerHTML = UNITS.map(u => {
+    const kpis = getUnitKpis(u.id);
+    const unitData = dayData[u.id] || {};
+    const filledCount = kpis.filter(k => {
+      const v = unitData[k.name]?.actual;
+      return v !== undefined && v !== '';
+    }).length;
+    const totalCount = kpis.length;
+
+    const rows = kpis.map((k, ki) => {
+      const saved = unitData[k.name] || {};
+      const savedVal = saved.actual !== undefined ? saved.actual : '';
+      const inputCls = 'actual-input';
+      const unitLabel = k.unit || '';
+      return `<tr>
+        <td class="col-kpi" style="font-size:13px;">
+          <input type="text" class="kpi-name-edit"
+            data-unit="${u.id}" data-kpi-index="${ki}" data-edit-field="name"
+            value="${escapeHtml(k.name)}" title="คลิกเพื่อแก้ไขชื่อ KPI">
+        </td>
+        <td class="col-target right">
+          <div class="unit-cell">
+            <input type="number" step="any" class="target-edit"
+              data-unit="${u.id}" data-kpi-index="${ki}" data-edit-field="target"
+              value="${k.target}" title="คลิกเพื่อแก้ไข Target">
+            <span class="unit-label">${unitLabel}</span>
+          </div>
+        </td>
+        <td class="col-actual right">
+          <div class="unit-cell">
+            <input type="number" step="any" class="${inputCls}"
+              data-unit="${u.id}" data-kpi="${escapeHtml(k.name)}" data-field="actual"
+              value="${savedVal}" placeholder="กรอก">
+            <span class="unit-label">${unitLabel}</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="daily-block" id="block-${u.id}">
+      <div class="daily-block-header">
+        <h3>${u.name}</h3>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="daily-summary-pill">กรอกแล้ว ${filledCount} / ${totalCount} KPI</div>
+          <button class="update-btn" data-unit-update="${u.id}" ${filledCount === 0 ? 'disabled' : ''}>↑ ส่งค่าไปหน้าภาพรวม</button>
+        </div>
+      </div>
+      <div class="edit-hint">✏️ คลิกที่ชื่อ KPI หรือ Target เพื่อแก้ไขได้เลย — บันทึกอัตโนมัติ</div>
+      <table class="daily-input-table">
+        <colgroup>
+          <col class="col-kpi">
+          <col class="col-target">
+          <col class="col-actual">
+        </colgroup>
+        <thead><tr>
+          <th class="col-kpi">KPI</th>
+          <th class="col-target right">Target</th>
+          <th class="col-actual right">Actual วันนี้</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  // Wire actual inputs
+  container.querySelectorAll('.actual-input').forEach(input => {
+    input.addEventListener('input', handleDailyInput);
+  });
+  // Wire KPI name + target edits
+  container.querySelectorAll('.kpi-name-edit, .target-edit').forEach(input => {
+    input.addEventListener('change', handleKpiEdit);
+  });
+  container.querySelectorAll('.update-btn[data-unit-update]').forEach(btn => {
+    btn.addEventListener('click', () => updateUnitFromDaily(btn.dataset.unitUpdate));
+  });
+  if (currentUser) applyDailyPermissions();
+}
+
+function handleDailyInput(e) {
+  const input = e.target;
+  const date = document.getElementById('dailyDate').value;
+  const unitId = input.dataset.unit;
+  const kpiName = input.dataset.kpi;
+  const field = input.dataset.field;
+  setDailyValue(date, unitId, kpiName, field, input.value);
+  if (field === 'actual') updateUnitFillCount(unitId);
+  flashSaveStatus();
+}
+
+// Handle edits to KPI name or target
+function handleKpiEdit(e) {
+  const input = e.target;
+  const unitId = input.dataset.unit;
+  const ki = parseInt(input.dataset.kpiIndex);
+  const field = input.dataset.editField; // 'name' or 'target'
+  let value = input.value.trim();
+  if (field === 'target') value = parseFloat(value) || 0;
+  saveKpiEdit(unitId, ki, field, value);
+  flashSaveStatus();
+  showToast('✓ บันทึก ' + (field === 'name' ? 'ชื่อ KPI' : 'Target') + ' แล้ว', 'success');
+}
+
+function updateUnitFillCount(unitId) {
+  const date = document.getElementById('dailyDate').value;
+  const unitData = (loadDailyData())[date]?.[unitId] || {};
+  const kpis = getUnitKpis(unitId);
+  const filled = kpis.filter(k => {
+    const v = unitData[k.name]?.actual;
+    return v !== undefined && v !== '';
+  }).length;
+  const pill = document.querySelector(`#block-${unitId} .daily-summary-pill`);
+  if (pill) pill.textContent = `กรอกแล้ว ${filled} / ${kpis.length} KPI`;
+  const btn = document.querySelector(`button[data-unit-update="${unitId}"]`);
+  if (btn) {
+    btn.disabled = filled === 0;
+    btn.classList.remove('success');
+    btn.innerHTML = '↑ ส่งค่าไปหน้าภาพรวม';
+  }
+}
+
+// ===== Push daily values into UNITS.actual and re-render overview =====
+function updateUnitFromDaily(unitId) {
+  const date = document.getElementById('dailyDate').value;
+  const unitData = (loadDailyData())[date]?.[unitId] || {};
+  const unit = UNITS.find(u => u.id === unitId);
+  if (!unit) return;
+
+  let updatedCount = 0;
+  const changes = [];
+  const kpisToUpdate = getUnitKpis(unit.id);
+  // Also prep custom storage update for actual values
+  const customData = loadCustomKpis();
+  if (!customData[unit.id]) {
+    customData[unit.id] = JSON.parse(JSON.stringify(unit.kpis));
+  }
+  kpisToUpdate.forEach((kpi, ki) => {
+    const saved = unitData[kpi.name];
+    if (saved && saved.actual !== '' && saved.actual !== undefined) {
+      const val = parseFloat(saved.actual);
+      if (!isNaN(val)) {
+        const old = kpi.actual;
+        kpi.actual = val;
+        // Sync to custom storage so overview table reads updated actual
+        if (customData[unit.id][ki]) customData[unit.id][ki].actual = val;
+        // Also sync to original UNITS array (for chart/status functions)
+        const origKpi = unit.kpis.find(k => k.name === kpi.name);
+        if (origKpi) origKpi.actual = val;
+        if (old !== val) changes.push(kpi.name + ': ' + formatNum(old) + ' → ' + formatNum(val));
+        updatedCount++;
+      }
+    }
+  });
+  saveCustomKpis(customData);
+
+  if (updatedCount === 0) {
+    showToast('ยังไม่มีค่า actual ที่กรอกในหน่วยนี้', 'error');
+    return;
+  }
+
+  // Re-render all dependent overview components
+  renderTable();           // KPI table by unit
+  renderOverviewCharts();  // Cost+forecast trend chart + unit on-target chart (in status tab)
+
+  // If trends tab was rendered, re-render unit trends to refresh history sparklines
+  if (trendsRendered) {
+    const idx = parseInt(document.getElementById('trendUnitSelect').value || 0);
+    renderUnitTrends(idx);
+  }
+
+  // Visual feedback on button
+  const btn = document.querySelector(`button[data-unit-update="${unitId}"]`);
+  if (btn) {
+    btn.classList.add('success');
+    btn.innerHTML = '✓ อัปเดตแล้ว';
+    setTimeout(() => {
+      btn.classList.remove('success');
+      btn.innerHTML = '↑ ส่งค่าไปหน้าภาพรวม';
+    }, 2500);
+  }
+
+  showToast(`✓ อัปเดต ${updatedCount} KPI ของ "${unit.name}" ไปยังหน้าภาพรวมแล้ว`, 'success');
+}
+
+let toastTimer = null;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.className = 'toast' + (type ? ' ' + type : '');
+  }, 3000);
+}
+
+let saveStatusTimer = null;
+function flashSaveStatus() {
+  const el = document.getElementById('saveStatus');
+  el.textContent = '✓ บันทึกแล้ว';
+  el.classList.add('saved');
+  clearTimeout(saveStatusTimer);
+  saveStatusTimer = setTimeout(() => {
+    el.textContent = 'บันทึกอัตโนมัติเมื่อกรอกค่า · เก็บใน browser';
+    el.classList.remove('saved');
+  }, 1500);
+}
+
+function exportDailyCsv() {
+  const date = document.getElementById('dailyDate').value;
+  const dayData = (loadDailyData())[date] || {};
+  const rows = [['Date','Unit','KPI','Target','UnitOfMeasure','Actual','Status','Note']];
+  UNITS.forEach(u => {
+    getUnitKpis(u.id).forEach(k => {
+      const saved = dayData[u.id]?.[k.name] || {};
+      const actualRaw = saved.actual;
+      const actualNum = actualRaw === '' || actualRaw === undefined ? '' : parseFloat(actualRaw);
+      const status = (actualNum === '' || isNaN(actualNum)) ? '' : statusLabel(calcStatus({ ...k, actual: actualNum }));
+      rows.push([date, u.name, k.name, k.target, k.unit || '', actualRaw === undefined ? '' : actualRaw, status, saved.note || '']);
+    });
+  });
+  const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `daily-actual-${date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function clearDailyData() {
+  const date = document.getElementById('dailyDate').value;
+  if (!confirm(`ล้างข้อมูล actual ทั้งหมดของวันที่ ${date}?`)) return;
+  const data = loadDailyData();
+  delete data[date];
+  saveDailyData(data);
+  renderDailyInput();
+  flashSaveStatus();
+}
+
+// ===== Year picker =====
+function syncYearPickers(year) {
+  chartYear = year;
+  // Update all picker buttons
+  document.querySelectorAll('.year-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.year) === year);
+  });
+  // Update future-note visibility + chart subtitles
+  const isFuture = year === CURRENT_YEAR;
+  document.querySelectorAll('.future-note').forEach(el => {
+    el.style.display = isFuture ? '' : 'none';
+  });
+  const sub = document.getElementById('statusChartSub');
+  if (sub) sub.textContent = `ม.ค.–ธ.ค. ${year} · เส้นประ = target${isFuture ? ' · ช่วงสีอ่อน = เดือนในอนาคต' : ''}`;
+  // Re-render charts
+  if (document.getElementById('tab-status').classList.contains('active')) {
+    renderOverviewCharts();
+  }
+  if (document.getElementById('tab-trends').classList.contains('active')) {
+    const idx = parseInt(document.getElementById('trendUnitSelect').value || 0);
+    renderUnitTrends(idx);
+  }
+}
+let trendsRendered = false;
+let dailyRendered = false;
+let statusRendered = false;
+
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const _activeBtn = document.querySelector('[data-tab="' + name + '"]');
+  if (_activeBtn) _activeBtn.classList.add('active');
+
+  if (name === 'status') {
+    // Always re-render so latest data shows up after daily update
+    setTimeout(() => {
+      renderOverviewCharts();
+      buildBottlenecks();
+      statusRendered = true;
+    }, 30);
+  }
+  if (name === 'trends') {
+    if (!trendsRendered) {
+      populateUnitSelect();
+      trendsRendered = true;
+    }
+    const idx = parseInt(document.getElementById('trendUnitSelect').value || 0);
+    setTimeout(() => renderUnitTrends(idx), 50);
+  }
+  if (name === 'daily' && !dailyRendered) {
+    renderDailyInput();
+    dailyRendered = true;
+  }
+}
+
+document.querySelectorAll('.tab-button').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+
+// ===== Wired inside initDashboard() — see Auth section below =====
+
+// ============================================================
+// AUTH SYSTEM
+// ============================================================
+const AUTH_KEY = 'poultryDashSession_v1';
+
+// User database: { unitId: { pass, displayName, dept, role } }
+// role: 'admin' | 'board' | 'unit'
+// admin & board → 3 tabs only (overview, status, trends) — NO daily tab
+// unit → 4 tabs, daily tab shows ONLY their own block
+const USERS = {
+  admin:     { pass: 'admin1234',  displayName: 'ผู้ดูแลระบบ',    dept: 'Integration Dashboard',         role: 'admin' },
+  board:     { pass: 'board2026',  displayName: 'Board/Executive', dept: 'คณะกรรมการ',                   role: 'board' },
+  feed:      { pass: 'feed@2026',      displayName: 'ผู้จัดการ',   dept: 'โรงงานอาหารสัตว์',            role: 'user' },
+  gpps:      { pass: 'gpps@2026',      displayName: 'ผู้จัดการ',   dept: 'ฟาร์ม GP/PS',                  role: 'user' },
+  hatch:     { pass: 'hatch@2026',     displayName: 'ผู้จัดการ',   dept: 'โรงฟักไข่',                    role: 'user' },
+  broiler:   { pass: 'broiler@2026',   displayName: 'ผู้จัดการ',   dept: 'ฟาร์มไก่เนื้อ (Own Farm)',          role: 'user' },
+  cf:        { pass: 'cf@2026',        displayName: 'ผู้จัดการ',   dept: 'Contract Farm Operations',      role: 'user' },
+  slaught:   { pass: 'slaught@2026',   displayName: 'ผู้จัดการ',   dept: 'โรงชำแหละไก่',                 role: 'user' },
+  cooked:    { pass: 'cooked@2026',    displayName: 'ผู้จัดการ',   dept: 'โรงปรุงสุก',                   role: 'user' },
+  export:    { pass: 'export@2026',    displayName: 'ผู้จัดการ',   dept: 'ฝ่ายขายต่างประเทศ',            role: 'user' },
+  domestic:  { pass: 'domestic@2026',  displayName: 'ผู้จัดการ',   dept: 'ฝ่ายขายในประเทศ',              role: 'user' },
+  frontdoor: { pass: 'frontdoor@2026', displayName: 'ผู้จัดการ',   dept: 'ฝ่ายขายหน้าโรง',               role: 'user' },
+  fsc:       { pass: 'fsc@2026',       displayName: 'ผู้จัดการ',   dept: 'Food Supply Chain (FSC)',        role: 'user' },
+  feedsales: { pass: 'feedsales@2026', displayName: 'ผู้จัดการ',   dept: 'ฝ่ายขายอาหารสัตว์ตลาดอิสระ',  role: 'user' },
+  procure:   { pass: 'procure@2026',   displayName: 'ผู้จัดการ',   dept: 'ฝ่ายจัดซื้อ',                  role: 'user' },
+  cold:      { pass: 'cold@2026',      displayName: 'ผู้จัดการ',   dept: 'คลังห้องเย็น',                  role: 'user' },
+  imex:      { pass: 'imex@2026',      displayName: 'ผู้จัดการ',   dept: 'ฝ่ายนำเข้า-ส่งออก',            role: 'user' },
+  hr:        { pass: 'hr@2026',        displayName: 'ผู้จัดการ',   dept: 'ฝ่ายบุคคล',                    role: 'user' },
+};
+
+let currentUser = null; // { unitId, displayName, dept, role }
+
+function saveSession(unitId) {
+  try { localStorage.setItem(AUTH_KEY, JSON.stringify({ unitId, ts: Date.now() })); } catch(e){}
+}
+function clearSession() {
+  try { localStorage.removeItem(AUTH_KEY); } catch(e){}
+}
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+    if (!s) return null;
+    // Session expires after 8 hours
+    if (Date.now() - s.ts > 8 * 60 * 60 * 1000) { clearSession(); return null; }
+    return s.unitId;
+  } catch(e) { return null; }
+}
+
+// ---- Login attempt ----
+const SINGLE_PASS = 'admin1234';
+
+function doLogin() {
+  const pass  = document.getElementById('loginPass').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+
+  if (pass !== SINGLE_PASS) {
+    errEl.textContent = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่';
+    errEl.style.display = 'block';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+    return;
+  }
+  currentUser = { unitId: 'admin', ...USERS['admin'] };
+  saveSession('admin');
+  applyLogin();
+}
+
+// ---- Apply after successful login ----
+function applyLogin() {
+  // Hide overlay
+  document.getElementById('loginOverlay').style.display = 'none';
+
+  // Show logout button — force right position via JS for iframe compatibility
+  const badge = document.getElementById('userBadgeWrap');
+  badge.style.display = 'block';
+  badge.style.position = 'fixed';
+  badge.style.top = '16px';
+  badge.style.right = '20px';
+  badge.style.left = 'auto';
+  badge.style.zIndex = '9000';
+
+  // Single admin user — restore all tabs and show overview
+  ['overview','status','trends','daily'].forEach(t => {
+    const btn = document.querySelector('[data-tab="' + t + '"]');
+    const tab = document.getElementById('tab-' + t);
+    if (btn) btn.style.display = '';
+    if (tab) tab.style.display = '';
+  });
+  showTab('overview');
+
+  // Init dashboard (was deferred until login)
+  initDashboard();
+  applyDailyPermissions();
+}
+
+// ---- Restrict daily input blocks by role ----
+function applyDailyPermissions() {
+  if (!dailyRendered) return;
+  // Single admin user — show all blocks
+  document.querySelectorAll('.daily-block').forEach(block => {
+    block.style.display = '';
+    block.classList.remove('block-locked');
+  });
+}
+
+// ---- Logout ----
+function doLogout() {
+  clearSession();
+  currentUser = null;
+  // Reset UI
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('userBadgeWrap').style.display = 'none';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  // Reset rendered flags so dashboard re-inits properly on next login
+  trendsRendered = false;
+  dailyRendered  = false;
+  statusRendered = false;
+  // Restore all tab buttons visibility (applyLogin will control on next login)
+  ['overview','status','trends','daily'].forEach(t => {
+    const btn = document.querySelector('[data-tab="' + t + '"]');
+    const tab = document.getElementById('tab-' + t);
+    if (btn) { btn.style.display = ''; btn.classList.remove('active'); }
+    if (tab) { tab.style.display = ''; tab.classList.remove('active'); }
+  });
+  document.querySelector('.tab-nav').style.visibility = 'hidden';
+  document.querySelectorAll('.tab-content').forEach(el => el.style.visibility = 'hidden');
+}
+
+// ---- Wire login form ----
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', doLogout);
+
+// ---- Deferred init: call AFTER login ----
+function initDashboard() {
+  document.querySelector('.tab-nav').style.visibility = 'visible';
+  document.querySelectorAll('.tab-content').forEach(el => el.style.visibility = 'visible');
+  renderCorporateKpis();
+  renderFilters();
+  renderTable();
+  initTableInteraction();
+
+  document.getElementById('dailyDate').addEventListener('change', () => {
+    if (dailyRendered) renderDailyInput();
+  });
+  document.getElementById('loadPrevDay').addEventListener('click', () => {
+    const cur = document.getElementById('dailyDate').valueAsDate || new Date();
+    cur.setDate(cur.getDate() - 1);
+    document.getElementById('dailyDate').value = cur.toISOString().slice(0,10);
+    if (dailyRendered) renderDailyInput();
+  });
+
+  // user role: render daily tab ทันทีเพราะเป็นแท็บเดียวที่เห็น
+  if (currentUser && currentUser.role === 'user' && !dailyRendered) {
+    renderDailyInput();
+    dailyRendered = true;
+    applyDailyPermissions();
+  }
+  document.getElementById('trendUnitSelect').addEventListener('change', (e) => {
+    renderUnitTrends(parseInt(e.target.value));
+  });
+  document.querySelectorAll('.year-btn').forEach(btn => {
+    btn.addEventListener('click', () => syncYearPickers(parseInt(btn.dataset.year)));
+  });
+}
+
+// ---- Auto-login from saved session ----
+(function() {
+  // Hide dashboard until login
+  document.querySelector('.tab-nav').style.visibility = 'hidden';
+  document.querySelectorAll('.tab-content').forEach(el => el.style.visibility = 'hidden');
+
+  const savedId = loadSession();
+  if (savedId && USERS[savedId]) {
+    currentUser = { unitId: savedId, ...USERS[savedId] };
+    applyLogin();
+  }
+})();
+</script>
+
+</body>
+</html>
