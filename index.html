@@ -14,14 +14,22 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
   body {
     font-family: 'Sarabun', 'Helvetica Neue', Arial, 'Segoe UI', sans-serif;
     background: #ffffff;
     color: #1f2937;
     line-height: 1.55;
     font-size: 14px;
-    margin: 0;
-    padding: 0;
   }
   .page-wrap {
     max-width: 1440px;
@@ -29,18 +37,20 @@
     padding: 24px;
     padding-top: 28px;
   }
+  .page-wrap.hidden { display: none; }
 
   .header {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    border-bottom: 2px solid #1f3864;
+    border-bottom: 2px solid #991b1b;
     padding-bottom: 16px;
     margin-bottom: 0;
     flex-wrap: wrap;
     gap: 16px;
+    position: relative;
   }
-  .header-title h1 { font-size: 22px; font-weight: 600; color: #1f3864; letter-spacing: -0.01em; }
+  .header-title h1 { font-size: 22px; font-weight: 600; color: #991b1b; letter-spacing: -0.01em; }
   .header-title .subtitle { font-size: 13px; color: #6b7280; margin-top: 4px; }
   .header-controls { display: flex; gap: 12px; align-items: center; }
   .period-selector { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4b5563; }
@@ -64,19 +74,19 @@
     cursor: pointer; border-bottom: 2px solid transparent;
     margin-bottom: -1px; transition: all 0.15s;
   }
-  .tab-button:hover { color: #1f3864; }
-  .tab-button.active { color: #1f3864; border-bottom-color: #1f3864; font-weight: 600; }
+  .tab-button:hover { color: #991b1b; }
+  .tab-button.active { color: #991b1b; border-bottom-color: #991b1b; font-weight: 600; }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
   .section { margin-bottom: 32px; }
   .section-title {
-    font-size: 15px; font-weight: 600; color: #1f3864;
+    font-size: 15px; font-weight: 600; color: #991b1b;
     margin-bottom: 14px; padding-bottom: 6px;
     border-bottom: 1px solid #e5e7eb;
     display: flex; align-items: center; gap: 8px;
   }
-  .section-title .accent { width: 4px; height: 16px; background: #1f3864; border-radius: 2px; }
+  .section-title .accent { width: 4px; height: 16px; background: #991b1b; border-radius: 2px; }
 
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
   .kpi-card {
@@ -422,15 +432,7 @@
     
 
   /* ===== Fixed top-right user badge ===== */
-  .user-badge-fixed {
-    position: fixed !important;
-    top: 16px;
-    right: 20px;
-    left: auto;
-    z-index: 9000;
-    transform: none !important;
-    will-change: unset;
-  }
+
 
   /* ===== KPI Tooltip ===== */
   .kpi-name-wrap {
@@ -500,16 +502,23 @@
 
   /* ===== Login overlay ===== */
   #loginOverlay {
-    position: fixed; inset: 0;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100vh;
     background: #f1f5f9;
     display: flex; align-items: center; justify-content: center;
     z-index: 9999;
+    overflow-y: auto;
   }
   .login-box {
     background: white; border: 1px solid #e5e7eb;
     border-radius: 14px; padding: 40px 44px;
     width: 100%; max-width: 400px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    margin: 20px auto;
+  }
+  @media (max-width: 480px) {
+    .login-box { padding: 28px 24px; border-radius: 12px; }
   }
   .login-logo {
     display: flex; align-items: center; gap: 10px; margin-bottom: 28px;
@@ -583,41 +592,78 @@
 <body>
 
 <!-- ===== Login Overlay ===== -->
-<div id="loginOverlay">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon">🐔</div>
-      <div>
-        <div class="login-logo-text">Integration Dashboard</div>
-        <div class="login-logo-sub">ธุรกิจไก่ครบวงจร (NAE)</div>
-      </div>
-    </div>
-    <h2>เข้าสู่ระบบ</h2>
-    <p class="login-sub">กรุณากรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+<div id="loginOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;overflow-y:auto;display:flex;align-items:center;justify-content:center;font-family:'Sarabun','Helvetica Neue',Arial,sans-serif;">
 
-  
-    <div class="login-field">
-      <label for="loginPass">รหัสผ่าน</label>
-      <input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
+  <!-- Background -->
+  <div style="position:absolute;inset:0;background:linear-gradient(160deg,#7f1d1d 0%,#991b1b 45%,#c0392b 100%);"></div>
+  <div style="position:absolute;inset:0;opacity:0.05;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:32px 32px;"></div>
+
+  <!-- Decorative shapes -->
+  <div style="position:absolute;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none;"></div>
+  <div style="position:absolute;bottom:-80px;left:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.04);pointer-events:none;"></div>
+  <div style="position:absolute;top:40%;left:-60px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.03);pointer-events:none;"></div>
+
+  <!-- Card -->
+  <div style="position:relative;background:white;border-radius:24px;padding:48px 48px 40px;width:92%;max-width:400px;box-shadow:0 32px 80px rgba(100,0,0,0.4);margin:24px auto;box-sizing:border-box;">
+
+    <!-- Top accent bar -->
+    <div style="position:absolute;top:0;left:48px;right:48px;height:3px;background:linear-gradient(90deg,#991b1b,#dc2626,#991b1b);border-radius:0 0 4px 4px;"></div>
+
+    <!-- Header text only — no icon -->
+    <div style="text-align:center;margin-bottom:36px;">
+      <div style="font-size:22px;font-weight:800;color:#7f1d1d;letter-spacing:-0.03em;line-height:1.2;">Integration Dashboard</div>
+      <div style="font-size:13px;color:#9ca3af;margin-top:6px;font-weight:400;letter-spacing:0.01em;">ธุรกิจไก่ครบวงจร · NAE</div>
     </div>
-    <button class="login-btn" id="loginBtn">เข้าสู่ระบบ</button>
-    <div class="login-error" id="loginError">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่</div>
-    
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg,transparent,#fca5a5 40%,#fca5a5 60%,transparent);margin-bottom:28px;"></div>
+
+    <!-- Label -->
+    <div style="font-size:12px;font-weight:600;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">รหัสผ่าน</div>
+
+    <!-- Input -->
+    <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"
+      style="font-family:inherit;font-size:15px;width:100%;padding:13px 16px;border:1.5px solid #e5e7eb;border-radius:10px;color:#1f2937;background:#fafafa;box-sizing:border-box;outline:none;margin-bottom:20px;letter-spacing:0.05em;"
+      onfocus="this.style.borderColor='#dc2626';this.style.background='white';this.style.boxShadow='0 0 0 3px rgba(220,38,38,0.10)'"
+      onblur="this.style.borderColor='#e5e7eb';this.style.background='#fafafa';this.style.boxShadow='none'">
+
+    <!-- Button -->
+    <button id="loginBtn"
+      style="width:100%;padding:14px;background:linear-gradient(135deg,#991b1b,#dc2626);color:white;border:none;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.03em;box-shadow:0 6px 20px rgba(185,28,28,0.35);"
+      onmouseover="this.style.opacity='0.92';this.style.transform='translateY(-1px)'"
+      onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+      เข้าสู่ระบบ
+    </button>
+
+    <!-- Error -->
+    <div id="loginError" style="display:none;background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;font-size:13px;padding:10px 14px;border-radius:8px;margin-top:14px;text-align:center;">
+      รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;margin-top:28px;font-size:11px;color:#d1d5db;letter-spacing:0.04em;">
+      CONFIDENTIAL · สำหรับผู้มีสิทธิ์เท่านั้น
+    </div>
   </div>
 </div>
-
-<!-- Fixed top-right user badge -->
-<div id="userBadgeWrap" style="display:none;" class="user-badge-fixed">
-  <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
-</div>
-
-<div class="page-wrap">
+<div class="page-wrap hidden" id="pageWrap">
 <div class="header">
   <div class="header-title">
     <h1>Integration Dashboard — ธุรกิจไก่ครบวงจร (NAE)</h1>
     <div class="subtitle">ติดตาม Target vs Actual แต่ละสายงาน · เน้นจุด bottleneck · อัปเดต <span id="lastUpdated"></span></div>
   </div>
   <!-- header-controls removed; user badge is fixed top-right -->
+  <div id="userBadgeWrap" style="display:none;margin-left:auto;align-self:center;">
+    <button id="logoutBtn" title="ออกจากระบบ" style="background:white;border:1px solid #e5e7eb;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.10);transition:all 0.15s;padding:0;"
+      onmouseover="this.style.borderColor='#dc2626';this.style.boxShadow='0 4px 12px rgba(220,38,38,0.2)'"
+      onmouseout="this.style.borderColor='#e5e7eb';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.10)'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
 <div class="tab-nav" role="tablist">
@@ -713,11 +759,8 @@
     <div class="section-title">
       <span class="accent"></span>สถานะภาพรวมรายปี
       <span style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-        <span class="future-note" id="statusFutureNote">พ.ค.–ธ.ค. = เดือนที่ยังไม่มีข้อมูล</span>
-        <div class="year-picker" id="statusYearPicker">
-          <button class="year-btn" data-year="2025">2025</button>
-          <button class="year-btn active" data-year="2026">2026</button>
-        </div>
+        <span class="future-note" id="statusFutureNote">พ.ค.–ธ.ค. = ข้อมูลยังไม่มี</span>
+        <span style="font-size:13px;font-weight:600;color:#991b1b;">2026</span>
       </span>
     </div>
     <div class="charts-row">
@@ -744,20 +787,12 @@
 <div class="tab-content" id="tab-trends">
   <div class="section">
     <div class="section-title">
-      <span class="accent"></span>แนวโน้ม Corporate KPIs รายปี (ม.ค.–ธ.ค.)
+      <span class="accent"></span>แนวโน้ม KPI รายหน่วยงาน
       <span style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-        <span class="future-note" id="trendsFutureNote">พ.ค.–ธ.ค. = เดือนที่ยังไม่มีข้อมูล</span>
-        <div class="year-picker" id="trendsYearPicker">
-          <button class="year-btn" data-year="2025">2025</button>
-          <button class="year-btn active" data-year="2026">2026</button>
-        </div>
+        <span class="future-note" id="trendsFutureNote">พ.ค.–ธ.ค. = ข้อมูลยังไม่มี</span>
+        <span style="font-size:13px;font-weight:600;color:#991b1b;">2026</span>
       </span>
     </div>
-    <div class="trends-grid" id="corpTrendsGrid"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-title"><span class="accent"></span>ดู KPI รายหน่วยงาน</div>
     <div class="daily-toolbar">
       <label>เลือกหน่วยงาน:</label>
       <select id="trendUnitSelect" class="qjump"></select>
@@ -814,15 +849,15 @@ document.getElementById('dailyDate').value = '2026-04-27';
 
 const CORPORATE_KPIS = [
   { label: 'End-to-end cost / kg saleable meat', value: 64.8, unit: 'บาท', target: 64.0, higher: false, pillar: 'cost',
-    history: [66.2,66.0,65.7,65.3,65.5,65.1,65.0,64.8,64.6,64.7,64.9,64.8] },
+    history: [66.2,66.0,65.7,65.3,65.5,65.1,65.0,64.8,65.2,64.5,64.9,64.8] },
   { label: 'NAE compliance rate', value: 100, unit: '%', target: 100, higher: true, pillar: 'diff',
     history: [100,100,99.7,100,100,100,100,99.8,100,100,100,100] },
   { label: 'Forecast accuracy (3-month)', value: 76.2, unit: '%', target: 80, higher: true, pillar: 'cost',
-    history: [72,74,75,76,77,78,76,75,77,76,77,76.2] },
+    history: [72,74,75,76,77,78,76,75,75,77,75,76.2] },
   { label: 'Group OTIF', value: 96.4, unit: '%', target: 97, higher: true, pillar: 'quality',
-    history: [94,94.5,95,95.5,96,96.2,96.5,96.8,96.5,96.2,96.0,96.4] },
+    history: [94,94.5,95,95.5,96,96.2,96.5,96.8,96.0,96.8,95.8,96.4] },
   { label: 'Margin per breeder / year', value: 1185, unit: 'บาท', target: 1200, higher: true, pillar: 'value',
-    history: [1100,1120,1140,1150,1160,1170,1175,1180,1190,1185,1180,1185] },
+    history: [1100,1120,1140,1150,1160,1170,1175,1180,1188,1182,1178,1185] },
 ];
 
 const UNITS = [
@@ -833,17 +868,17 @@ const UNITS = [
     { name: 'FCR เฉลี่ยฟาร์ม (corrected)',
       why: 'ตัวชี้วัดคุณภาพอาหารที่ส่งผลโดยตรงต่อต้นทุนการผลิตทั้งสาย',
       target: 1.75, actual: 1.79, unit: '', higher: false,
-      history: [1.88,1.86,1.85,1.84,1.83,1.82,1.81,1.80,1.79,1.80,1.79,1.79],
+      history: [1.88,1.86,1.85,1.84,1.83,1.82,1.81,1.80,1.82,1.80,1.78,1.79],
       owner: 'ร่วม โรงอาหาร+ฟาร์ม', partner: 'ฟาร์ม' },
     { name: 'Formula accuracy',
       why: 'ความแม่นยำสูตรส่งผลต่อ nutrient delivery และ FCR — ISO milling standard',
       target: 99.5, actual: 99.2, unit: '%', higher: true,
-      history: [98.5,98.6,98.7,98.8,99.0,99.1,99.2,99.3,99.3,99.2,99.1,99.2],
+      history: [98.5,98.6,98.7,98.8,99.0,99.1,99.2,99.3,99.0,99.1,99.3,99.2],
       owner: 'QA', partner: 'R&D' },
     { name: 'Cost per ton vs budget',
       why: 'ต้นทุนวัตถุดิบ+กระบวนการ tolerance ±2% — NAE ingredient premium สูงกว่า conventional ~6%',
       target: 0, actual: 1.8, unit: '%', tolerance: 2, higher: false,
-      history: [3.5,3.2,2.9,2.6,2.3,2.0,1.8,2.1,2.2,1.8,1.7,1.8],
+      history: [3.5,3.2,2.9,2.6,2.3,2.0,1.8,2.1,2.0,1.9,1.7,1.8],
       owner: 'ผจก.โรงงาน', partner: 'จัดซื้อ' },
   ]},
   // ฟาร์ม GP/PS: เลือก Hatchability handed-off (output สุดท้ายที่ส่งมอบ),
@@ -852,17 +887,17 @@ const UNITS = [
     { name: 'Hatchability handed-off (from set)',
       why: 'KPI สุดท้ายที่รวมทุกปัจจัย: fertility × hatchability × reject — เป็น output ที่ส่งมอบให้โรงฟัก',
       target: 83, actual: 81.8, unit: '%', higher: true,
-      history: [78.0,78.5,79.0,79.5,80.0,80.5,81.0,81.5,81.8,81.5,81.8,81.8],
+      history: [78.0,78.5,79.0,79.5,80.0,80.5,81.0,81.5,81.5,82.0,81.8,81.8],
       owner: 'ร่วม GP/PS+โรงฟัก', partner: 'โรงฟัก' },
     { name: 'Reject chick rate',
       why: 'สะท้อนสุขภาพฝูง + คุณภาพการฟัก — ทุก 1% reject = สูญรายได้ลูกไก่ทั้งล็อต',
       target: 2.5, actual: 3.2, unit: '%', higher: false,
-      history: [4.8,4.5,4.2,3.9,3.6,3.3,3.0,2.8,2.9,3.2,3.2,3.2],
+      history: [4.8,4.5,4.2,3.9,3.6,3.3,3.0,2.8,3.1,3.0,3.3,3.2],
       owner: 'ผจก.ฟาร์ม + โรงฟัก', partner: 'โรงฟัก' },
     { name: '1st week mortality (broiler)',
       why: 'KPI ร่วม GP/PS–โรงฟัก–ฟาร์ม วัดคุณภาพลูกไก่ที่ส่งออกจริง target ≤1.0% (NAE)',
       target: 1.0, actual: 1.3, unit: '%', higher: false,
-      history: [1.8,1.7,1.6,1.5,1.4,1.3,1.2,1.1,1.0,1.1,1.3,1.3],
+      history: [1.8,1.7,1.6,1.5,1.4,1.3,1.2,1.1,1.2,1.1,1.4,1.3],
       owner: 'ผจก.ฟาร์ม', partner: 'ฟาร์มไก่เนื้อ, สัตวแพทย์' },
   ]},
   // โรงฟักไข่: เลือก Hatchability from set (KPI หลัก), Chick quality Pasgar (มาตรฐานสากล),
@@ -871,17 +906,17 @@ const UNITS = [
     { name: 'Hatchability (from set)',
       why: 'KPI หลักของโรงฟัก วัด % ลูกไก่ที่ออกจากไข่ทั้งหมดที่ใส่ — Ross NAE top quartile >83%',
       target: 83, actual: 81.5, unit: '%', higher: true,
-      history: [78.5,79.0,79.5,80.0,80.5,81.0,81.5,82.0,81.8,81.5,81.3,81.5],
+      history: [78.5,79.0,79.5,80.0,80.5,81.0,81.5,82.0,81.2,81.8,81.0,81.5],
       owner: 'ผจก.โรงฟัก', partner: 'GP/PS' },
     { name: 'Chick quality (Pasgar score ≥7)',
       why: 'มาตรฐานสากล Pasgar/Tona scoring วัดความสมบูรณ์ลูกไก่ — ส่งผลโดยตรงต่อ 1st week mortality',
       target: 90, actual: 87.2, unit: '%', higher: true,
-      history: [83.0,84.0,85.0,86.0,87.0,87.5,88.0,88.5,88.0,87.5,87.0,87.2],
+      history: [83.0,84.0,85.0,86.0,87.0,87.5,88.0,88.5,87.5,87.8,86.8,87.2],
       owner: 'QA', partner: 'ฟาร์ม' },
     { name: 'Livability (chick to delivery)',
       why: 'อัตราการมีชีวิตรอดของลูกไก่ตั้งแต่ฟักออกจนถึงส่งมอบให้ฟาร์มเนื้อ — สะท้อนคุณภาพการจัดการหลังฟัก, การขนส่ง และ biosecurity ของโรงฟัก target ≥98.5%',
       target: 98.5, actual: 97.8, unit: '%', higher: true,
-      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.2,98.0,97.8,97.6,97.8],
+      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.2,97.6,98.0,97.5,97.8],
       owner: 'ผจก.โรงฟัก', partner: 'สัตวแพทย์' },
   ]},
   // ฟาร์มไก่เนื้อ: เลือก EPEF (integrates all: BW × livability / FCR × age),
@@ -890,7 +925,7 @@ const UNITS = [
     { name: 'EPEF (NAE index)',
       why: 'European Production Efficiency Factor รวม BW, FCR, livability, อายุในสูตรเดียว — KPI เดียวที่วัดประสิทธิภาพรวม NAE top quartile ≥330',
       target: 330, actual: 315, unit: '', higher: true,
-      history: [292,296,300,304,308,312,316,320,318,315,315,315],
+      history: [292,296,300,304,308,312,316,320,312,318,310,315],
       owner: 'ผจก.ฟาร์ม', partner: 'อาหารสัตว์' },
     { name: 'FCR corrected (NAE)',
       why: 'Feed cost คือ 65-70% ของต้นทุนการผลิต — FCR 1 จุด = ผลต่อกำไรหลายล้านบาท/เดือน',
@@ -909,17 +944,17 @@ const UNITS = [
     { name: 'NAE compliance (CF group)',
       why: 'ความเสี่ยงสูงกว่าฟาร์มเองเพราะ visibility ต่ำกว่า — 1 breach = ทั้งกลุ่มเสี่ยงสูญสถานะ',
       target: 100, actual: 99.2, unit: '%', higher: true,
-      history: [97.5,98.0,98.5,99.0,99.5,100,99.8,100,99.5,99.0,99.2,99.2],
+      history: [97.5,98.0,98.5,99.0,99.5,100,99.8,100,99.8,99.5,99.0,99.2],
       owner: 'สัตวแพทย์', partner: 'QA' },
     { name: 'EPEF avg (CF, NAE)',
       why: 'วัดประสิทธิภาพการเลี้ยงรวมของกลุ่ม CF — top CF NAE performer ≥315 EPEF',
       target: 315, actual: 305, unit: '', higher: true,
-      history: [284,288,292,296,299,302,305,308,306,304,305,305],
+      history: [284,288,292,296,299,302,305,308,304,308,302,305],
       owner: 'ผจก.CF', partner: 'สัตวแพทย์' },
     { name: '% farms passing full audit',
       why: 'Biosecurity + welfare + NAE protocol audit ผ่านทั้งหมด — proxy ของ management quality ทั้งกลุ่ม',
       target: 88, actual: 84, unit: '%', higher: true,
-      history: [74,76,78,80,81,82,83,84,85,84,83,84],
+      history: [74,76,78,80,81,82,83,84,83,85,82,84],
       owner: 'ผจก.CF + QA', partner: '-' },
   ]},
   // ── แปรรูป ──────────────────────────────────────────────────────────────────
@@ -929,17 +964,17 @@ const UNITS = [
     { name: 'A Grade yield improvement (%)',
       why: 'วัดสัดส่วนซากไก่ที่ผ่านมาตรฐาน A Grade (ไม่มีรอยฟกช้ำ, น้ำหนักในช่วง spec, ผิวสมบูรณ์) — เป้าหมายคือลด defect ต่อเนื่อง ทุก 1% ที่เพิ่ม = premium revenue ต่างจาก B/C ถึง 15-25 บาท/kg',
       target: 75, actual: 72.8, unit: '%', higher: true,
-      history: [67.0,68.0,69.0,70.0,71.0,71.5,72.0,72.5,72.8,72.8,72.8,72.8],
+      history: [67.0,68.0,69.0,70.0,71.0,71.5,72.0,72.5,72.5,73.0,72.2,72.8],
       owner: 'QA', partner: 'ฟาร์ม, ขายส่งออก' },
     { name: 'Carcass yield (%)',
       why: 'วัดประสิทธิภาพการใช้น้ำหนักมีชีวิต — ทุก 0.5% = ผลต่อปริมาณ product หลายตัน/วัน',
       target: 73.5, actual: 72.8, unit: '%', higher: true,
-      history: [71.0,71.2,71.5,71.8,72.2,72.5,72.8,73.0,73.2,72.8,72.6,72.8],
+      history: [71.0,71.2,71.5,71.8,72.2,72.5,72.8,73.0,72.6,73.1,72.3,72.8],
       owner: 'ผจก.ผลิต', partner: 'ฟาร์ม' },
     { name: 'ต้นทุนการผลิต',
       why: 'Processing cost ต่อตัน (ไม่รวมค่าไก่) — target 5,800 บาท/ตัน = efficient scale operation',
       target: 5800, actual: 6050, unit: 'บาท/ตัน', higher: false,
-      history: [7200,7000,6800,6600,6400,6200,6100,6050,6000,5950,6050,6050],
+      history: [7200,7000,6800,6600,6400,6200,6100,6050,6100,5980,6020,6050],
       owner: 'ผจก.ผลิต', partner: 'บัญชี' },
   ]},
   // โรงปรุงสุก: OEE (ต้นทุน), OTIF (คุณภาพ), Value Added mix (มูลค่า — กลยุทธ์หลัก 2026)
@@ -947,17 +982,17 @@ const UNITS = [
     { name: 'OEE (%)',
       why: 'Availability × Performance × Quality รวม 3 มิติ — กลยุทธ์ ต้นทุน: Full OEE คือเป้าหมาย 2026',
       target: 72, actual: 68.5, unit: '%', higher: true,
-      history: [61,62,63,64,65,66,67,68,68.5,68.0,68.5,68.5],
+      history: [61,62,63,64,65,66,67,68,68.0,69.0,67.5,68.5],
       owner: 'ผจก.โรงงาน', partner: 'ซ่อมบำรุง' },
     { name: 'Process improvement rate (yield %)',
       why: 'วัด yield ของสินค้า value-added (YTR/MARINADE/IVQF/BREADED) ต่อน้ำหนักวัตถุดิบที่รับเข้า — ปรับปรุงกระบวนการเพื่อลด trim loss และเพิ่ม output ต่อ kg input กลยุทธ์ ต้นทุน 2026',
       target: 88, actual: 85.5, unit: '%', higher: true,
-      history: [82.0,82.5,83.0,83.5,84.0,84.5,85.0,85.5,85.8,85.5,85.3,85.5],
+      history: [82.0,82.5,83.0,83.5,84.0,84.5,85.0,85.5,85.2,86.0,84.8,85.5],
       owner: 'ผจก.โรงงาน + R&D', partner: 'QA' },
     { name: 'Value Added mix % (YTR/MARINADE/IVQF/BREADED)',
       why: 'สัดส่วน value-added product ในการผลิตทั้งหมด — กลยุทธ์ มูลค่า 2026: เพิ่ม YTR, MARINADE, IVQF, BREADED IVQF',
       target: 40, actual: 32, unit: '%', higher: true,
-      history: [18,20,22,24,26,28,29,30,31,30,32,32],
+      history: [18,20,22,24,26,28,29,30,30,33,31,32],
       owner: 'ผจก.โรง + R&D + ขาย', partner: 'ขายส่งออก' },
   ]},
   // ขายต่างประเทศ: Sales volume (มูลค่า), Gross margin (มูลค่า), Value Added mix (มูลค่า+ทำต่าง)
@@ -965,17 +1000,17 @@ const UNITS = [
     { name: 'Sales volume vs target',
       why: 'Top-line — เกินเป้าสะท้อน demand > supply ซึ่งดีสำหรับ NAE premium pricing',
       target: 100, actual: 102, unit: '%', higher: true,
-      history: [96,97,98,99,100,101,102,103,101,100,102,102],
+      history: [96,97,98,99,100,101,102,103,100,103,100,102],
       owner: 'ผจก.ขายส่งออก', partner: 'โรงผลิต' },
     { name: 'Forward Sales coverage (%)',
       why: 'สัดส่วน volume ที่ลูกค้ายืนยัน (confirmed PO) ล่วงหน้าก่อนเดือนผลิต — ยิ่งสูงยิ่งลดความเสี่ยงด้าน demand และช่วยให้ S&OP วางแผนได้แม่นยำ target ≥70% ของ monthly volume',
       target: 70, actual: 64, unit: '%', higher: true,
-      history: [52,54,56,58,60,61,62,63,64,63,64,64],
+      history: [52,54,56,58,60,61,62,63,62,65,61,64],
       owner: 'ผจก.ขายส่งออก', partner: 'S&OP' },
     { name: 'Value Added mix % (YTR/MARINADE/IVQF/BREADED)',
       why: 'กลยุทธ์ มูลค่า 2026: เพิ่ม 1% = margin ขยาย 0.3-0.5% โดยไม่เพิ่ม volume — ขายล่วงหน้า Special Product',
       target: 60, actual: 58, unit: '%', higher: true,
-      history: [52,53,54,55,56,57,58,59,58,57,58,58],
+      history: [52,53,54,55,56,57,58,59,57,59,56,58],
       owner: 'ผจก.ขายส่งออก', partner: 'โรงปรุงสุก' },
   ]},
   // ขายในประเทศ: เลือก Sales volume, Gross margin, NPD penetration (growth driver)
@@ -983,17 +1018,17 @@ const UNITS = [
     { name: 'Sales volume vs target',
       why: 'Top-line ในประเทศ — baseline revenue ที่รับซื้อ product ที่ไม่ถึงเกณฑ์ส่งออก',
       target: 100, actual: 99, unit: '%', higher: true,
-      history: [96,97,97,98,99,100,99,98,99,100,99,99],
+      history: [96,97,97,98,99,100,99,98,98,100,98,99],
       owner: 'ผจก.ขายในประเทศ', partner: 'โรงผลิต' },
     { name: 'Forward Sales coverage (%)',
       why: 'สัดส่วน volume ในประเทศที่ลูกค้ายืนยันล่วงหน้า (confirmed PO/contract) ก่อนเดือนผลิต — ช่วยลด overstock และ stockout ในตลาดในประเทศ target ≥60%',
       target: 60, actual: 55, unit: '%', higher: true,
-      history: [44,46,48,50,52,53,54,55,55,54,55,55],
+      history: [44,46,48,50,52,53,54,55,54,56,53,55],
       owner: 'ผจก.ขายในประเทศ', partner: 'S&OP' },
     { name: 'NPD penetration (%)',
       why: 'สัดส่วนยอดขาย new product ≤18 เดือน — driver ของ margin expansion และ brand differentiation',
       target: 10, actual: 8.5, unit: '%', higher: true,
-      history: [5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,8.5,8.0,8.5,8.5],
+      history: [5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,8.2,8.8,8.0,8.5],
       owner: 'ผจก.ขาย+R&D', partner: 'R&D' },
   ]},
   // ขายหน้าโรง: Truck load utilization, No-order stock rate, Fresh-to-frozen diversion
@@ -1001,17 +1036,17 @@ const UNITS = [
     { name: 'Truck load utilization (%)',
       why: 'วัดสัดส่วนน้ำหนักสินค้าต่อความจุรถบรรทุกต่อเที่ยว — ขายให้เต็มคันรถลดต้นทุนขนส่งต่อ kg และเพิ่ม revenue ต่อเที่ยว target ≥90% ของ capacity',
       target: 90, actual: 85.5, unit: '%', higher: true,
-      history: [78,79,80,81,82,83,84,85,85.5,85,85.5,85.5],
+      history: [78,79,80,81,82,83,84,85,84.5,86,84,85.5],
       owner: 'ผจก.หน้าโรง', partner: 'โรงชำแหละ' },
     { name: 'No-order stock rate (%)',
       why: 'สัดส่วนสินค้าที่ไม่มี customer order รองรับต่อ stock ทั้งหมด — stock ที่ไม่มี order = เสี่ยงค้างและต้องลดราคาหรือทิ้ง กลยุทธ์คือลดสัดส่วนนี้ให้น้อยที่สุด',
       target: 5, actual: 8.2, unit: '%', higher: false,
-      history: [14,13,12,11,10,9.5,9,8.5,8.2,8.5,8.2,8.2],
+      history: [14,13,12,11,10,9.5,9,8.5,8.5,8.0,8.8,8.2],
       owner: 'ผจก.หน้าโรง', partner: 'S&OP' },
     { name: 'Fresh-to-frozen diversion rate (%)',
       why: 'สัดส่วนสินค้าสดที่ต้องโอนเข้า freezer เพราะขายไม่หมดในวัน — ยิ่งน้อยยิ่งดี เพราะ frozen = margin ลดลงและ shelf life สั้นลง target ≤8%',
       target: 8, actual: 10.5, unit: '%', higher: false,
-      history: [16,15,14,13,12,11.5,11,10.5,10,10.5,10.5,10.5],
+      history: [16,15,14,13,12,11.5,11,10.5,11.0,10.0,11.2,10.5],
       owner: 'ผจก.หน้าโรง', partner: 'คลังห้องเย็น' },
   ]},
   // FSC: KPI ที่มีอยู่ครบอยู่แล้ว — 3 ตัว on-point
@@ -1019,12 +1054,12 @@ const UNITS = [
     { name: 'OTIF delivery (%)',
       why: 'Key account commitment — FSC customer penalty clause เริ่มที่ OTIF <97% ทำให้ target 98% สำคัญมาก',
       target: 98, actual: 97.8, unit: '%', higher: true,
-      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.2,98.0,97.9,97.8,97.8],
+      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.2,97.5,98.2,97.2,97.8],
       owner: 'ผจก.FSC', partner: 'คลัง' },
     { name: 'Forward Sales coverage (%)',
       why: 'สัดส่วน FSC volume ที่ลูกค้า (โรงแรม, ร้านอาหาร, สายการบิน) confirm ล่วงหน้าก่อนเดือนผลิต — ช่วยให้วางแผนการผลิตและ cold chain ได้แม่นยำ ลดการ short supply target ≥80%',
       target: 80, actual: 76, unit: '%', higher: true,
-      history: [62,64,66,68,70,72,73,74,75,75,76,76],
+      history: [62,64,66,68,70,72,73,74,74,77,73,76],
       owner: 'ผจก.FSC', partner: 'S&OP' },
     { name: 'On-spec audit pass (%)',
       why: 'B2B food spec audit (spec weight, micro limit, labeling) — ผ่าน 100% = ต่อสัญญาได้; ล้มเหลว = termination',
@@ -1037,17 +1072,17 @@ const UNITS = [
     { name: 'Sales volume vs target (%)',
       why: 'ตลาดอิสระเป็น outlet สำคัญช่วง excess capacity — volume รักษา plant utilization',
       target: 100, actual: 105, unit: '%', higher: true,
-      history: [97,99,101,102,103,104,105,106,104,105,105,105],
+      history: [97,99,101,102,103,104,105,106,103,106,104,105],
       owner: 'ผจก.ขายอาหาร', partner: 'โรงงานอาหาร' },
     { name: 'Gross margin (%)',
       why: 'ตลาดอิสระ margin ต่ำกว่า captive — target 8% เป็นเกณฑ์ขั้นต่ำที่ยังควร serve ตลาดนี้',
       target: 8, actual: 7.5, unit: '%', higher: true,
-      history: [6.8,7.0,7.2,7.4,7.6,7.8,8.0,7.8,7.5,7.6,7.5,7.5],
+      history: [6.8,7.0,7.2,7.4,7.6,7.8,8.0,7.8,7.3,7.7,7.2,7.5],
       owner: 'ผจก.ขายอาหาร', partner: 'บัญชี' },
     { name: 'Trial sample conversion rate (%)',
       why: 'สัดส่วนลูกค้าที่ได้รับสินค้าตัวอย่างแล้วสั่งซื้อต่อเนื่องภายใน 60 วัน — วัดประสิทธิภาพการขยายฐานลูกค้าใหม่ในตลาดอิสระ target ≥40%',
       target: 40, actual: 32, unit: '%', higher: true,
-      history: [20,22,24,26,28,30,31,32,33,32,32,32],
+      history: [20,22,24,26,28,30,31,32,30,34,29,32],
       owner: 'ผจก.ขายอาหาร', partner: 'R&D' },
   ]},
   // ── หน่วยสนับสนุน ────────────────────────────────────────────────────────────
@@ -1056,17 +1091,17 @@ const UNITS = [
     { name: 'Purchase Price Variance vs benchmark (%)',
       why: 'PPV วัด savings ของทีมจัดซื้อ — tolerance ±2% จาก benchmark market; negative = ซื้อถูกกว่าตลาด',
       target: 0, actual: -1.2, unit: '%', tolerance: 2, higher: false,
-      history: [1.8,1.5,1.2,0.8,0.5,0.2,0,-0.3,-0.8,-1.0,-1.2,-1.2],
+      history: [1.8,1.5,1.2,0.8,0.5,0.2,0,-0.3,-1.0,-0.8,-1.5,-1.2],
       owner: 'ผจก.จัดซื้อ', partner: 'โรงอาหาร' },
     { name: 'Incoming material reject rate (%)',
       why: 'วัตถุดิบที่รับเข้าแล้วไม่ผ่าน spec — reject ทุก % คือ disruption ต่อ production plan',
       target: 1.0, actual: 0.8, unit: '%', higher: false,
-      history: [1.5,1.4,1.3,1.2,1.1,1.0,0.9,0.8,0.7,0.8,0.8,0.8],
+      history: [1.5,1.4,1.3,1.2,1.1,1.0,0.9,0.8,0.9,0.7,0.9,0.8],
       owner: 'QA + จัดซื้อ', partner: 'QA' },
     { name: 'Key supplier fill rate (%)',
       why: 'Supplier ส่งมอบตามสั่ง — fill rate ต่ำ = NAE ingredient ขาด → ไม่สามารถผลิตได้',
       target: 98, actual: 96.8, unit: '%', higher: true,
-      history: [93.5,94.0,94.5,95.0,95.5,96.0,96.5,97.0,96.8,96.5,96.8,96.8],
+      history: [93.5,94.0,94.5,95.0,95.5,96.0,96.5,97.0,96.5,97.2,96.2,96.8],
       owner: 'ผจก.จัดซื้อ', partner: '-' },
   ]},
   // คลังห้องเย็น: เลือก Temperature deviation (food safety critical), OTIF support, Inventory accuracy
@@ -1074,17 +1109,17 @@ const UNITS = [
     { name: 'Temperature deviation events',
       why: 'Cold chain break = food safety risk + potential export ban — zero tolerance เป็น non-negotiable',
       target: 0, actual: 1, unit: 'event', higher: false,
-      history: [3,2,2,1,1,1,0,0,1,2,1,1],
+      history: [3,2,2,1,1,1,0,0,2,1,1,1],
       owner: 'ผจก.คลัง', partner: 'ซ่อมบำรุง' },
     { name: 'OTIF support rate (%)',
       why: 'คลังคือ final gate ก่อนส่งลูกค้า — OTIF ต่ำที่คลัง = shipping miss แม้ production จะ on-time',
       target: 98, actual: 97.5, unit: '%', higher: true,
-      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.0,97.8,97.6,97.5,97.5],
+      history: [96.5,96.8,97.0,97.2,97.5,97.8,98.0,98.0,97.2,97.8,97.0,97.5],
       owner: 'ผจก.คลัง + ขาย', partner: 'ขาย' },
     { name: 'Inventory record accuracy (%)',
       why: 'ความแม่นยำ inventory สะท้อนระบบควบคุมคลัง — ต่ำ = หาของไม่เจอ, ส่งผิด lot, recall risk',
       target: 99.5, actual: 99.6, unit: '%', higher: true,
-      history: [99.0,99.1,99.2,99.3,99.5,99.6,99.7,99.6,99.5,99.6,99.7,99.6],
+      history: [99.0,99.1,99.2,99.3,99.5,99.6,99.7,99.6,99.4,99.7,99.5,99.6],
       owner: 'ผจก.คลัง', partner: 'IT' },
   ]},
   // นำเข้า-ส่งออก: เลือก Export OTIF (output สุดท้ายที่ลูกค้าเห็น),
@@ -1093,17 +1128,17 @@ const UNITS = [
     { name: 'Export shipment OTIF (%)',
       why: 'KPI ปลายทางที่ลูกค้าต่างประเทศวัด — miss OTIF ส่งออก = penalty + relationship damage',
       target: 97, actual: 95.5, unit: '%', higher: true,
-      history: [93.0,93.5,94.0,94.5,95.0,95.5,96.0,96.5,95.8,95.5,95.4,95.5],
+      history: [93.0,93.5,94.0,94.5,95.0,95.5,96.0,96.5,95.2,96.0,94.8,95.5],
       owner: 'ผจก.นำเข้า-ส่งออก + ขาย', partner: 'ขายส่งออก' },
     { name: 'Documentation accuracy (%)',
       why: 'เอกสารผิดพลาด = Customs delay, demurrage cost, cargo hold — root cause ของ OTIF miss',
       target: 99.5, actual: 99.2, unit: '%', higher: true,
-      history: [98.0,98.2,98.5,98.8,99.0,99.1,99.2,99.3,99.2,99.1,99.2,99.2],
+      history: [98.0,98.2,98.5,98.8,99.0,99.1,99.2,99.3,99.0,99.4,98.8,99.2],
       owner: 'ผจก.นำเข้า-ส่งออก', partner: '-' },
     { name: 'Customs clearance time (วัน)',
       why: 'Clearance เร็ว = cold chain ครบถ้วน + ลด demurrage — target 2 วัน เป็น best practice ไทย',
       target: 2, actual: 1.8, unit: 'วัน', higher: false,
-      history: [2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8,1.9,2.0,1.8,1.8],
+      history: [2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8,2.0,1.7,2.0,1.8],
       owner: 'ผจก.นำเข้า-ส่งออก', partner: '-' },
   ]},
   // HR: เลือก Attrition (retention), Critical role fill time (speed), Engagement (leading indicator)
@@ -1111,17 +1146,17 @@ const UNITS = [
     { name: 'Annual attrition rate (%)',
       why: 'แรงงานแปรรูปอาหาร + ช่างเทคนิค NAE หายากมาก — attrition สูง = training cost + production risk',
       target: 12, actual: 14.5, unit: '%', higher: false,
-      history: [16.5,16.0,15.5,15.0,14.8,14.5,14.2,14.0,14.5,14.5,14.5,14.5],
+      history: [16.5,16.0,15.5,15.0,14.8,14.5,14.2,14.0,15.0,14.0,14.5,14.5],
       owner: 'ผจก.HR', partner: 'หัวหน้าหน่วย' },
     { name: 'Critical role time-to-fill (วัน)',
       why: 'ตำแหน่ง critical (สัตวแพทย์ NAE, QA, production supervisor) ว่างนาน = production risk ทันที',
       target: 45, actual: 52, unit: 'วัน', higher: false,
-      history: [62,60,58,56,54,52,50,48,50,52,52,52],
+      history: [62,60,58,56,54,52,50,48,55,50,54,52],
       owner: 'ผจก.HR', partner: 'หน่วยขอ' },
     { name: 'Employee engagement score',
       why: 'Leading indicator ของ attrition และ productivity — score ต่ำ 6-9 เดือนก่อน attrition พุ่ง',
       target: 75, actual: 73, unit: '', higher: true,
-      history: [68,69,70,71,72,73,74,74,73,73,73,73],
+      history: [68,69,70,71,72,73,74,74,72,74,72,73],
       owner: 'ผจก.HR', partner: '-' },
   ]},
 ];
@@ -1639,7 +1674,6 @@ function populateUnitSelect() {
 
 function renderUnitTrends(unitIndex) {
   destroyTrendCharts();
-  renderCorpTrends();
   const unit = UNITS[unitIndex];
   const kpisForTrend = getUnitKpis(unit.id);
   const grid = document.getElementById('unitTrendsGrid');
@@ -1963,26 +1997,8 @@ function clearDailyData() {
 
 // ===== Year picker =====
 function syncYearPickers(year) {
-  chartYear = year;
-  // Update all picker buttons
-  document.querySelectorAll('.year-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.year) === year);
-  });
-  // Update future-note visibility + chart subtitles
-  const isFuture = year === CURRENT_YEAR;
-  document.querySelectorAll('.future-note').forEach(el => {
-    el.style.display = isFuture ? '' : 'none';
-  });
-  const sub = document.getElementById('statusChartSub');
-  if (sub) sub.textContent = `ม.ค.–ธ.ค. ${year} · เส้นประ = target${isFuture ? ' · ช่วงสีอ่อน = เดือนในอนาคต' : ''}`;
-  // Re-render charts
-  if (document.getElementById('tab-status').classList.contains('active')) {
-    renderOverviewCharts();
-  }
-  if (document.getElementById('tab-trends').classList.contains('active')) {
-    const idx = parseInt(document.getElementById('trendUnitSelect').value || 0);
-    renderUnitTrends(idx);
-  }
+  // Locked to 2026 only
+  chartYear = 2026;
 }
 let trendsRendered = false;
 let dailyRendered = false;
@@ -2098,12 +2114,7 @@ function applyLogin() {
 
   // Show logout button — force right position via JS for iframe compatibility
   const badge = document.getElementById('userBadgeWrap');
-  badge.style.display = 'block';
-  badge.style.position = 'fixed';
-  badge.style.top = '16px';
-  badge.style.right = '20px';
-  badge.style.left = 'auto';
-  badge.style.zIndex = '9000';
+  badge.style.display = 'flex';
 
   // Single admin user — restore all tabs and show overview
   ['overview','status','trends','daily'].forEach(t => {
@@ -2149,8 +2160,8 @@ function doLogout() {
     if (btn) { btn.style.display = ''; btn.classList.remove('active'); }
     if (tab) { tab.style.display = ''; tab.classList.remove('active'); }
   });
-  document.querySelector('.tab-nav').style.visibility = 'hidden';
-  document.querySelectorAll('.tab-content').forEach(el => el.style.visibility = 'hidden');
+  const pw2 = document.getElementById('pageWrap');
+  if (pw2) pw2.classList.add('hidden');
 }
 
 // ---- Wire login form ----
@@ -2160,8 +2171,8 @@ document.getElementById('logoutBtn').addEventListener('click', doLogout);
 
 // ---- Deferred init: call AFTER login ----
 function initDashboard() {
-  document.querySelector('.tab-nav').style.visibility = 'visible';
-  document.querySelectorAll('.tab-content').forEach(el => el.style.visibility = 'visible');
+  const pw = document.getElementById('pageWrap');
+  if (pw) pw.classList.remove('hidden');
   renderCorporateKpis();
   renderFilters();
   renderTable();
@@ -2186,17 +2197,13 @@ function initDashboard() {
   document.getElementById('trendUnitSelect').addEventListener('change', (e) => {
     renderUnitTrends(parseInt(e.target.value));
   });
-  document.querySelectorAll('.year-btn').forEach(btn => {
-    btn.addEventListener('click', () => syncYearPickers(parseInt(btn.dataset.year)));
-  });
+  // year picker removed — locked to 2026
 }
 
 // ---- Auto-login from saved session ----
 (function() {
   // Hide dashboard until login
-  document.querySelector('.tab-nav').style.visibility = 'hidden';
-  document.querySelectorAll('.tab-content').forEach(el => el.style.visibility = 'hidden');
-
+  // pageWrap already hidden by default (class="hidden")
   const savedId = loadSession();
   if (savedId && USERS[savedId]) {
     currentUser = { unitId: savedId, ...USERS[savedId] };
