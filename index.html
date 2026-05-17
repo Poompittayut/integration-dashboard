@@ -807,14 +807,14 @@
     <label for="dailyDate">วันที่บันทึก</label>
     <input type="date" id="dailyDate">
     <button class="toolbar-btn outline" id="loadPrevDay">← วันก่อนหน้า</button>
-    <span class="save-status" id="saveStatus">บันทึกอัตโนมัติเมื่อกรอกค่า · เก็บใน browser</span>
+    <span class="save-status" id="saveStatus">บันทึกอัตโนมัติเมื่อกรอกค่า · เก็บใน Supabase Cloud ☁️</span>
   </div>
 
   <div id="dailyBlocks"></div>
 </div>
 
 <div class="footer">
-  Confidential — Board use only · ข้อมูล Actual ในแดชบอร์ดเป็น <strong>ตัวอย่าง demo</strong> · ข้อมูลที่กรอกในแท็บ "บันทึกรายวัน" จัดเก็บในเบราว์เซอร์ของท่าน (localStorage)
+  Confidential — Board use only · ข้อมูล Actual ในแดชบอร์ดเป็น <strong>ตัวอย่าง demo</strong> · ข้อมูลที่กรอกในแท็บ "บันทึกรายวัน" จัดเก็บใน Supabase Cloud — ทุกคนเห็นข้อมูลเดียวกัน
 </div>
 </div><!-- /.page-wrap -->
 
@@ -1696,13 +1696,72 @@ function renderUnitTrends(unitIndex) {
 
 // ===== TAB 3 — Daily input =====
 
+// ===== SUPABASE CONFIG =====
+const SUPABASE_URL = 'https://idhvnggghjaerucihara.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_rW2Vg_ErVgwwZGKUAfmRtA_NfZPXVzt';
+
+async function supabaseQuery(method, table, body, params) {
+  let url = `${SUPABASE_URL}/rest/v1/${table}`;
+  if (params) url += '?' + params;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (method === 'GET') return res.json();
+  return res.ok;
+}
+
+// In-memory cache (fallback + speed)
+let _dailyCache = {};
+let _customCache = {};
+let _cacheLoaded = false;
+
+async function loadAllFromSupabase() {
+  if (_cacheLoaded) return;
+  try {
+    const rows = await supabaseQuery('GET', 'daily_kpi', null, 'select=record_date,department,kpi_key,actual_value,is_custom,custom_json&limit=10000');
+    _dailyCache = {};
+    _customCache = {};
+    if (Array.isArray(rows)) {
+      rows.forEach(r => {
+        if (r.is_custom && r.custom_json) {
+          _customCache[r.department] = JSON.parse(r.custom_json);
+        } else {
+          if (!_dailyCache[r.record_date]) _dailyCache[r.record_date] = {};
+          if (!_dailyCache[r.record_date][r.department]) _dailyCache[r.record_date][r.department] = {};
+          if (!_dailyCache[r.record_date][r.department][r.kpi_key]) _dailyCache[r.record_date][r.department][r.kpi_key] = {};
+          _dailyCache[r.record_date][r.department][r.kpi_key].actual = r.actual_value;
+        }
+      });
+    }
+    _cacheLoaded = true;
+  } catch(e) { console.warn('Supabase load error:', e); }
+}
+
 const CUSTOM_KEY = 'poultryCustomKPI_v1';
 
 function loadCustomKpis() {
-  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) || '{}'); } catch { return {}; }
+  return _customCache;
 }
 function saveCustomKpis(data) {
-  try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(data)); } catch(e) {}
+  _customCache = data;
+  // Save each unit's custom KPI config to Supabase
+  Object.entries(data).forEach(([unitId, kpis]) => {
+    supabaseQuery('POST', 'daily_kpi', {
+      record_date: '2000-01-01',
+      department: unitId,
+      kpi_key: '__custom__',
+      actual_value: null,
+      is_custom: true,
+      custom_json: JSON.stringify(kpis)
+    }, 'on_conflict=record_date,department,kpi_key').catch(e => console.warn(e));
+  });
 }
 // Get effective KPI list for a unit (custom overrides original)
 function getUnitKpis(unitId) {
@@ -1726,22 +1785,27 @@ function saveKpiEdit(unitId, kpiIndex, field, value) {
 const STORAGE_KEY = 'poultryDashDaily_v1';
 
 function loadDailyData() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
-  catch { return {}; }
+  return _dailyCache;
 }
 
 function saveDailyData(data) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-  catch (e) { console.warn('Cannot save:', e); }
+  _dailyCache = data;
 }
 
 function setDailyValue(date, unitId, kpiName, field, value) {
-  const data = loadDailyData();
-  if (!data[date]) data[date] = {};
-  if (!data[date][unitId]) data[date][unitId] = {};
-  if (!data[date][unitId][kpiName]) data[date][unitId][kpiName] = {};
-  data[date][unitId][kpiName][field] = value;
-  saveDailyData(data);
+  if (!_dailyCache[date]) _dailyCache[date] = {};
+  if (!_dailyCache[date][unitId]) _dailyCache[date][unitId] = {};
+  if (!_dailyCache[date][unitId][kpiName]) _dailyCache[date][unitId][kpiName] = {};
+  _dailyCache[date][unitId][kpiName][field] = value;
+  // Save to Supabase
+  supabaseQuery('POST', 'daily_kpi', {
+    record_date: date,
+    department: unitId,
+    kpi_key: kpiName,
+    actual_value: value === '' ? null : parseFloat(value),
+    is_custom: false,
+    custom_json: null
+  }, 'on_conflict=record_date,department,kpi_key').catch(e => console.warn(e));
 }
 
 function checkDailyStatus(kpi, actualVal) {
@@ -1955,7 +2019,7 @@ function flashSaveStatus() {
   el.classList.add('saved');
   clearTimeout(saveStatusTimer);
   saveStatusTimer = setTimeout(() => {
-    el.textContent = 'บันทึกอัตโนมัติเมื่อกรอกค่า · เก็บใน browser';
+    el.textContent = 'บันทึกอัตโนมัติเมื่อกรอกค่า · เก็บใน Supabase Cloud ☁️';
     el.classList.remove('saved');
   }, 1500);
 }
@@ -2027,9 +2091,12 @@ function showTab(name) {
     const idx = parseInt(document.getElementById('trendUnitSelect').value || 0);
     setTimeout(() => renderUnitTrends(idx), 50);
   }
-  if (name === 'daily' && !dailyRendered) {
-    renderDailyInput();
-    dailyRendered = true;
+  if (name === 'daily') {
+    _cacheLoaded = false;
+    loadAllFromSupabase().then(() => {
+      renderDailyInput();
+      dailyRendered = true;
+    });
   }
 }
 
