@@ -808,6 +808,7 @@
     <input type="date" id="dailyDate">
     <button class="toolbar-btn outline" id="loadPrevDay">← วันก่อนหน้า</button>
     <span class="save-status" id="saveStatus">บันทึกอัตโนมัติเมื่อกรอกค่า · เก็บใน Supabase Cloud ☁️</span>
+    <button class="toolbar-btn" id="syncSheetsBtn" onclick="syncAllDayToSheets()" style="background:#0f9d58;border-color:#0f9d58;margin-left:auto;">☁️ Sync ทั้งวันไปยัง Google Sheets</button>
   </div>
 
   <div id="dailyBlocks"></div>
@@ -1700,6 +1701,75 @@ function renderUnitTrends(unitIndex) {
 const SUPABASE_URL = 'https://idhvnggghjaerucihara.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_rW2Vg_ErVgwwZGKUAfmRtA_NfZPXVzt';
 
+// ── Google Sheets Real-time Sync ─────────────────────────────
+const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx1NS_mJFQ8Mj62ozJNey_7H9oTZwZgmyDSIkgzrg9w13avcb1VxTmwVgHYT98aH7L24w/exec';
+
+async function sendToSheets(payload) {
+  try {
+    await fetch(SHEETS_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) { console.warn('Sheets sync error:', e); }
+}
+
+function syncKpiToSheets(date, unitId, kpiName, actualValue) {
+  const unit = UNITS.find(u => u.id === unitId);
+  if (!unit) return;
+  const kpi = getUnitKpis(unitId).find(k => k.name === kpiName);
+  if (!kpi) return;
+  sendToSheets({
+    action:       'log_kpi',
+    record_date:  date,
+    department:   unit.name,
+    kpi_key:      kpiName,
+    actual_value: actualValue === '' ? null : parseFloat(actualValue),
+    target:       kpi.target,
+    unit:         kpi.unit || '',
+    higher:       kpi.higher,
+    tolerance:    kpi.tolerance,
+    pillar:       kpi.pillar || '',
+    updated_by:   (currentUser && currentUser.dept) ? currentUser.dept : 'dashboard'
+  });
+}
+
+async function syncAllDayToSheets() {
+  const date    = document.getElementById('dailyDate').value;
+  const dayData = (loadDailyData())[date] || {};
+  const rows    = [];
+  UNITS.forEach(u => {
+    const unitData = dayData[u.id] || {};
+    getUnitKpis(u.id).forEach(k => {
+      const saved = unitData[k.name];
+      const actualRaw = saved?.actual;
+      if (actualRaw === undefined || actualRaw === '') return;
+      rows.push({
+        record_date:  date,
+        department:   u.name,
+        kpi_key:      k.name,
+        actual_value: parseFloat(actualRaw),
+        target:       k.target,
+        unit:         k.unit || '',
+        higher:       k.higher,
+        tolerance:    k.tolerance,
+        pillar:       k.pillar || '',
+        updated_by:   (currentUser && currentUser.dept) ? currentUser.dept : 'dashboard'
+      });
+    });
+  });
+  if (rows.length === 0) { showToast('ยังไม่มีข้อมูลที่กรอกในวันนี้', 'error'); return; }
+  const btn = document.getElementById('syncSheetsBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลัง Sync...'; }
+  await sendToSheets({ action: 'sync_all', rows });
+  if (btn) {
+    btn.textContent = '✅ Sync สำเร็จ (' + rows.length + ' KPI)';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '☁️ Sync ทั้งวันไปยัง Google Sheets'; }, 3000);
+  }
+  showToast('✓ ส่งข้อมูล ' + rows.length + ' KPI ไปยัง Google Sheets แล้ว', 'success');
+}
+
 async function supabaseQuery(method, table, body, params) {
   let url = `${SUPABASE_URL}/rest/v1/${table}`;
   if (params) url += '?' + params;
@@ -1903,7 +1973,11 @@ function handleDailyInput(e) {
   const kpiName = input.dataset.kpi;
   const field = input.dataset.field;
   setDailyValue(date, unitId, kpiName, field, input.value);
-  if (field === 'actual') updateUnitFillCount(unitId);
+  if (field === 'actual') {
+    updateUnitFillCount(unitId);
+    // Real-time sync to Google Sheets
+    syncKpiToSheets(date, unitId, kpiName, input.value);
+  }
   flashSaveStatus();
 }
 
